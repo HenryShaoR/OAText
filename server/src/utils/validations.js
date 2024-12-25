@@ -43,7 +43,7 @@ export function isValidName(name) {
 export function isValidSession(veri_session) {
     // data = getData();
     //data.sessions.find(session => session.sessionId = veri_session.sessionId);
-    return true;
+    return true;  // STUB!
 } 
 
 export function isValidArticleName(name) {
@@ -59,14 +59,5 @@ export function isValidContent(content) {
 }
 
 export async function isValidArticle(articleId) {
-    // data = getData();
-    // if (data.articles.find(article => article.Id === articleId) != null) {
-    //     return true;
-    // }
-    // return false;
     return 0 <= articleId && articleId < await newId(Target.article);
-}
-
-export async function isValidUserId(userId) {
-    return 0 <= userId && userId < await newId(Target.user);
 }

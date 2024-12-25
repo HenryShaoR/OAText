@@ -4,6 +4,7 @@ import PostCard from '../components/post/PostCard';
 import {useEffect, useState} from "react";
 import {server} from "../utils/address.ts";
 import {readCookies} from "../utils/cookies.ts";
+import {popup} from "../utils/popup.ts";
 
 const ProfilePage = () => {
     const cookies = readCookies();
@@ -35,11 +36,11 @@ const ProfilePage = () => {
                     post.isSeries = result.long;
                     return post;
                 } else {
-                    alert(result.error);
+                    popup(result.error);
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                alert("Server Unreachable, Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.")
+                popup("Server Unreachable, Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.")
             }
         }
 
@@ -68,11 +69,11 @@ const ProfilePage = () => {
                     setPost(await Promise.all(postsPromise));
                     setLoading(false);
                 } else {
-                    alert(result.error);
+                    popup(result.error);
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                alert("Server Unreachable, Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.")
+                popup("Server Unreachable, Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.")
             }
         }
         getUser().then(() => {});

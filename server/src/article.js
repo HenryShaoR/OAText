@@ -16,6 +16,7 @@ import {
 } from "./utils/validations.js";
 
 import {Status, Target} from "./const.js";
+import {solve} from "./utils/asyncUtils.js";
 
 
 function validate(session, name, summary, content) {
@@ -37,7 +38,7 @@ function validate(session, name, summary, content) {
     return true;
 }
 
-function getAuthorName(session) {  // to be replaced in future
+async function getAuthorId(session) {  // to be replaced in future
     return parseInt(session);  // STUB!
 }
 
@@ -59,10 +60,11 @@ export async function articleUpload(session, title, summary, content, long, pric
 
     validate(session, title, summary, content);
 
-    const articleId = await newId(Target.article);
+    const [validPreArticleId, articleId, authorId] = await solve(isValidArticle(previousArticleId), newId(Target.article), getAuthorId(session));
+    const authorPromise = getData(Target.user, authorId);
     const date = new Date();
 
-    if (await isValidArticle(previousArticleId)) {
+    if (validPreArticleId) {
         let previous = await getData(Target.article, previousArticleId);
         previous.nextChap = articleId;
         await updateData(previous);
@@ -74,7 +76,7 @@ export async function articleUpload(session, title, summary, content, long, pric
         title,
         summary,
         content,
-        getAuthorName(session),
+        authorId,
         date,
         date,
         -1,
@@ -87,8 +89,7 @@ export async function articleUpload(session, title, summary, content, long, pric
         [], // comments set to an empty array
         []
     ));
-
-    const author = await getData(Target.user, getAuthorName(session));
+    const author = await authorPromise;
     author.publishedArticles.push(articleId);
     await updateData(author);
     return {};
@@ -111,12 +112,11 @@ export async function articleUpload(session, title, summary, content, long, pric
 export async function articleUpdate(session, title, summary, content, rating, long, price, tags, targetArticleId, nextArticle) {
     validate(session, title, summary, content);
 
+    const [validNextArticle, article] = await solve(isValidArticle(nextArticle), getData(Target.article, targetArticleId));
 
-    if ((!await isValidArticle(nextArticle) && nextArticle >= 0) || !await isValidArticle(targetArticleId)) {
+    if ((!validNextArticle && nextArticle >= 0) || article === null) {
         throw new Error("Invalid article Id.");
     }
-
-    const article = await getData(Target.article, targetArticleId);
 
     await updateData(newArticle(
         targetArticleId,

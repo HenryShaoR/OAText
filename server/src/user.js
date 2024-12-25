@@ -4,10 +4,7 @@ import {
     newId,
     newUser,
     getUserBy,
-    addData
-} from "./data.js";
-
-import {
+    addData,
     getSessionIndex,
     removeSession,
     appendSession
@@ -16,11 +13,12 @@ import {
 import {
     isValidEmail,
     isValidName,
-    isValidPassword, isValidUserId,
+    isValidPassword,
     isValidUsername
 } from "./utils/validations.js";
 
 import {Status, Target} from "./const.js";
+import {solve} from "./utils/asyncUtils.js";
 
 /**
  * Register a user with an email, password, and names,
@@ -46,8 +44,7 @@ export async function userSignup(email, password, username) {
         throw new Error("The username is invalid, username must be at least 3 characters long with only letters, numbers and hyphen.");
     }
 
-    const usrPromise = getUserBy('username', username), emailPromise = getUserBy('email', email), idPromise = newId(Target.user);
-    const [usernameExists, emailExists, id] = await Promise.all([usrPromise, emailPromise, idPromise]);
+    const [usernameExists, emailExists, id] = await solve(getUserBy('username', username), getUserBy('email', email), newId(Target.user));
 
     if (usernameExists) {
         throw new Error("The username already been used.");
@@ -124,11 +121,11 @@ export async function userSignIn(email, password) {
  * if the registration is successful
  */
 export async function userSignOut(userId, sessionId) {
-    if (!await isValidUserId(userId)) {
+    const user = await getData(Target.user, userId);
+
+    if (user === null) {
         throw new Error("This user is not signed in.");
     }
-
-    const user = await getData(Target.user, userId);
 
     const sessionIndex = getSessionIndex(user, sessionId);
 
@@ -136,13 +133,13 @@ export async function userSignOut(userId, sessionId) {
         throw new Error("This session has already been signed out.");
     }
 
-    removeSession(user, sessionIndex);
+    await removeSession(user, sessionIndex);
     return {};
 }
 
 export async function userDetail(id) {
     const user = await getData(Target.user, id);
-    if (user == null) {
+    if (user === null) {
         throw new Error("The user doesn't exist.");
     }
     return user;
@@ -156,11 +153,11 @@ export async function userDetailUpdate(userId, username, nameFirst, nameLast) {
         throw new Error('Invalid last name, you must enter at lease 3 characters');
     }
 
-    if (userId >= await newId(Target.user)) {
+    const user = await getData(Target.user, userId);
+
+    if (user === null) {
         throw new Error("The user doesn't exist.");
     }
-
-    const user = await getData(Target.user, userId);
 
     user.username = username;
     user.nameFirst = nameFirst;
@@ -175,15 +172,15 @@ export async function userEmailUpdate(userId, newEmail) {
         throw new Error('Invalid email format.');
     }
 
-    if (!await isValidUserId(userId)) {
+    const [user, email] = await solve(getData(Target.user, userId), getUserBy('email', newEmail));
+
+    if (user === null) {
         throw new Error("The user doesn't exist.");
     }
 
-    if (await getUserBy('email', newEmail)) {
+    if (email) {
         throw new Error('This email has already being used.');
     }
-
-    let user = await getData(Target.user, userId);
     user.email = newEmail;
     await updateData(user);
     return {};
@@ -196,16 +193,16 @@ export async function userPasswordUpdate(userId, oldPassword, newPassword) {
 
     let user = await getData(Target.user, userId);
 
+    if (user === null) {
+        throw new Error("The user doesn't exist.");
+    }
+
     if (user.password !== oldPassword) {
         throw new Error("The password doesn't match the existing password.");
     }
 
     if (user.password === newPassword) {
         throw new Error("New password cannot match the old password.");
-    }
-
-    if (!await isValidUserId(userId)) {
-        throw new Error("The user doesn't exist.");
     }
 
     user.password = newPassword;
@@ -216,12 +213,12 @@ export async function userPasswordUpdate(userId, oldPassword, newPassword) {
 export async function userDelete(userId, password) {
     let user = await getData(Target.user, userId);
 
-    if (user.password !== password) {
-        throw new Error("The password doesn't match the existing password.");
+    if (user === null) {
+        throw new Error("The user doesn't exist.");
     }
 
-    if (!await isValidUserId(userId)) {
-        throw new Error("The user doesn't exist.");
+    if (user.password !== password) {
+        throw new Error("The password doesn't match the existing password.");
     }
 
     user.status = Status.deletedByUser; // change in future to allow more deletion reasons.

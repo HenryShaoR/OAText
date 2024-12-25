@@ -1,4 +1,5 @@
 import {MongoClient} from "mongodb";
+import {solve} from "./asyncUtils.js";
 
 
 export class DBConnection {
@@ -75,19 +76,18 @@ export class DBConnection {
 }
 
 
+
+
 async function test() {
     console.time('DBConnection');
     const db = new DBConnection();
     await db.connect();
     console.timeEnd('DBConnection');
-    console.time('get');
+    console.time('action');
 
-    console.log(await db.get("users", {id: 0}))
-    console.log(await db.get("users", {id: 0}))
-    console.log(await db.get("users", {id: 0}))
-    console.log(await db.put("users", {id: 1}, {password: "hello world", nameLast: "Wan"}))
-    console.log(await db.count("users"))
-    console.timeEnd('get');
+    console.log(await db.get("user", {id: 100000}))
+
+    console.timeEnd('action');
 }
 
-// await test();
+// test();

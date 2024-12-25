@@ -1,10 +1,21 @@
 import {Target} from './const.js';
 import {DBConnection} from "./utils/db.js";
+import {exit} from "process";
+import {solve} from "./utils/asyncUtils.js";
+
 
 console.warn("DB Connection in Progress...");
+console.time("DB Connection")
 const db = new DBConnection();
 await db.connect();
 console.log("DB Connected");
+console.timeEnd("DB Connection");
+
+process.on("SIGINT", async () => {
+    await db.disconnect();
+    console.log("DB Disconnected");
+    exit(-1073741510);  // 0xC000013A: interrupted by Ctrl+C
+});
 
 /**
  * Represents a user account.
@@ -13,7 +24,7 @@ console.log("DB Connected");
  * @param {number} status - The status code of the user.
  * @param {number[]} following - The id of the user's following accounts
  * @param {number[]} followers - The id of the user's followers' accounts
- * @param {{String: String} | {}} nicknames - {id: this user's nickname to the id}
+ * @param {{string: string} | {}} nicknames - {id: this user's nickname to the id}
  * @param {number} likesGot - The total number of likes got by the user
  * @param {number[]} likes - The id of articles user liked.
  * @param {number[]} dislikes - The id of articles user disliked.
@@ -83,8 +94,7 @@ export function newUser(id, status, following, followers, nicknames, likesGot,
  * @param {Object[]} reply - The reply.
  */
 export async function newComment(id, content, author, likes, dislikes, time, reply) {
-    const userPromise = getData(Target.user, author), articlePromise = getData(Target.article, id[0]);
-    const [user, article] = await Promise.all([userPromise, articlePromise]);
+    const [user, article] = await solve([getData(Target.user, author), getData(Target.article, id[0])]);
     return {
         _type: 'comment',
         id: id,
@@ -276,7 +286,7 @@ async function newCommentId(parentIds) {
 }
 
 export async function addComments(parentIds, userId, content) {
-    const commentId = await newCommentId(parentIds);
+    let [commentId, parent] = await solve([newCommentId(parentIds), getData(Target.articles, parentIds[0])]);
     const comment = await newComment(
         parentIds.concat(commentId),
         content,
@@ -287,7 +297,6 @@ export async function addComments(parentIds, userId, content) {
         []
     );  // create the comment object
 
-    let parent = await getData(Target.articles, parentIds[0]);  // set the parent comment to the article itself.
     const newValue = parent;
     if (parentIds.length === 1) {  // if the article is the only parent
         parent.comments.push(comment);  // push this comment to the article's comment list
@@ -342,8 +351,7 @@ async function storeImage(image) {
 }
 
 export async function addImages(authorId, image, alt, status) {
-    const urlPromise = storeImage(image), idPromise = newId(Target.image);
-    const [url, id] = await Promise.all([urlPromise, idPromise]);
+    const [url, id] = await solve([storeImage(image), newId(Target.image)]);
     const img = newImage(
         id,
         authorId,
