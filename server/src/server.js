@@ -14,8 +14,7 @@ import {
     userDetail,
     userDetailUpdate,
     userPasswordUpdate,
-    userEmailUpdate,
-    userDelete
+    userDelete,
 } from "./user.js";
 
 import {
@@ -26,6 +25,7 @@ import {
 } from "./article.js";
 
 import cors from "cors";
+import {sendCode, verifyCode} from "./email.js";
 
 export const app = express();
 
@@ -76,28 +76,28 @@ app.get('/v1/user/:userId', async (req, res) => {
 });
 
 app.put("/v1/user/update", async (req, res) => {
-    let { username, nameFirst, nameLast, userId } = req.body;
+    let {  userId, avatar, username, bio, email, preference} = req.body;
     userId = parseInt(userId);
 
     try {
-        res.status(SUCCESS).json(await userDetailUpdate(userId, username, nameFirst, nameLast));
+        res.status(SUCCESS).json(await userDetailUpdate(userId, avatar, username, bio, email, preference));
     }
     catch (error) {
         res.status(BAD).json({ error: error.message });
     }
 });
 
-app.put("/v1/user/email", async (req, res) => {
-    let { newEmail, userId } = req.body;
-    userId = parseInt(userId);
-
-    try {
-        res.status(SUCCESS).json(await userEmailUpdate(userId, newEmail));
-    }
-    catch (error) {
-        res.status(BAD).json({ error: error.message });
-    }
-});
+// app.put("/v1/user/email", async (req, res) => {
+//     let { newEmail, userId } = req.body;
+//     userId = parseInt(userId);
+//
+//     try {
+//         res.status(SUCCESS).json(await userEmailUpdate(userId, newEmail));
+//     }
+//     catch (error) {
+//         res.status(BAD).json({ error: error.message });
+//     }
+// });
 
 app.put("/v1/user/password", async (req, res) => {
     let { oldPassword, newPassword, userId } = req.body;
@@ -198,3 +198,33 @@ app.put('/v1/article/:articleId/update', async (req, res) => {
 
 app.post('/v1/search/:searchTerm', async (req, res) => {
 });
+
+app.post('/v1/sendCode', async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        res.status(SUCCESS).json(await sendCode(email));
+    } catch (error) {
+        res.status(BAD).json({ error: error.message });
+    }
+});
+
+app.post('/v1/verifyCode', async (req, res) => {
+    const { email, code } = req.body;
+
+    try {
+        res.status(SUCCESS).json(await verifyCode(email, code));
+    } catch (error) {
+        res.status(BAD).json({ error: error.message });
+    }
+});
+
+// app.put('/v1/user/notifications', async (req, res) => {
+//     const { id, preference } = req.body;
+//
+//     try {
+//         res.status(SUCCESS).json(await updateEmailPreference(id, preference));
+//     } catch (error) {
+//         res.status(BAD).json({ error: error.message });
+//     }
+// })

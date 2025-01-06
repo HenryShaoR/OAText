@@ -11,24 +11,21 @@ const ReadingPage = () => {
         id,
         title: '',
         content: '',
-        coverImage: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97',  // STUB!
+        coverImage: '',
         author: {
             name: '',
-            avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80',  // STUB!
-            bio: 'Tech writer and web developer'  // STUB!
+            avatar: '',
+            bio: ''
         },
         publishedAt: '',
-        readTime: 5,  // STUB!
+        readTime: 0,
         likes: 0
     });
 
     useEffect(() => {
 
         const getAuthor = async (uid: number) => {
-            let author: any = {
-                avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80',  // STUB!
-                bio: 'Tech writer and web developer'  // STUB!
-            };
+            let author: any = {};
             try {
                 const response = await fetch(`${server}/v1/user/${uid}`, {
                     method: 'GET'
@@ -38,6 +35,8 @@ const ReadingPage = () => {
 
                 if (response.ok) {
                     author.name = result.username;
+                    author.avatar = result.avatar;
+                    author.bio = result.bio;
                 } else {
                     popup(result.error);
                 }
@@ -59,10 +58,11 @@ const ReadingPage = () => {
                 if (response.ok) {
                     post.title = result.title;
                     post.content = result.content;
-                    post.publishedAt = result.initialCreateTime;
-                    post.readTime = result.initialReadTime;
-                    post.likes = result.likes.length;
+                    post.publishedAt = result.publishTime;
+                    post.readTime = result.readTime;
+                    post.likes = result.likes;
                     post.author = await getAuthor(result.author);
+                    post.coverImage = result.cover;
                     setLoading(false);
                     return post;
                 } else {

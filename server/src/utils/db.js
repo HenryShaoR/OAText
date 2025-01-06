@@ -1,5 +1,4 @@
 import {MongoClient} from "mongodb";
-import {solve} from "./asyncUtils.js";
 
 
 export class DBConnection {
@@ -31,18 +30,16 @@ export class DBConnection {
     }
 
     async execute(func) {
-        // await this.connect();
         await this.assertConnect();
         try {
             return await func();
         } catch (error) {
             console.error(error);
-        } finally {
-            // await this.disconnect();
         }
     }
 
     async post(type, data) {
+        await this.assertConnect();
         return await this.execute(async () => {
             const result = await this.db.collection(type).insertOne(data);
             return result.insertedId;
@@ -50,18 +47,21 @@ export class DBConnection {
     }
 
     async get(type, query) {
+        await this.assertConnect();
         return await this.execute(async () => {
             return await this.db.collection(type).findOne(query);
         });
     }
 
     async search(type, searchTerm) {
+        await this.assertConnect();
         return await this.execute(async () => {
             return await this.db.collection(type).find({ $text: { $search: `"${searchTerm}"` } });
         });
     }
 
     async put(type, query, newData) {
+        await this.assertConnect();
         return await this.execute(async () => {
             const result = await this.db.collection(type).updateOne(query, { $set: newData}, {upsert: true});
             return result.upsertedId;
@@ -69,25 +69,16 @@ export class DBConnection {
     }
 
     async count(type) {
+        await this.assertConnect();
         return await this.execute(async () => {
             return await this.db.collection(type).count();
         });
     }
+
+    async remove(type, query) {
+        await this.assertConnect();
+        return await this.execute(async () => {
+            return await this.db.collection(type).deleteOne(query);
+        })
+    }
 }
-
-
-
-
-async function test() {
-    console.time('DBConnection');
-    const db = new DBConnection();
-    await db.connect();
-    console.timeEnd('DBConnection');
-    console.time('action');
-
-    console.log(await db.get("user", {id: 100000}))
-
-    console.timeEnd('action');
-}
-
-// test();

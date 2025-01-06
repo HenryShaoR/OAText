@@ -1,8 +1,3 @@
-/*
-Cover image should be optional;
-Consider use <input type="file".../> instead of "text" and ask for url.
- */
-
 import {useForm} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {z} from 'zod';
@@ -12,7 +7,8 @@ import {readCookies} from "../utils/cookies.ts";
 import {popup} from "../utils/popup.ts";
 
 const postSchema = z.object({
-    title: z.string().min(1, 'Title is required').max(100),
+    title: z.string().min(1, 'Title is required').max(100, 'Your title is too long'),
+    summary: z.string().min(1, 'Summary is required').max(100, 'Your summary is too long'),
     content: z.string().min(1, 'Content is required'),
     coverImage: z.string().url('Please enter a valid image URL'),
     isSeries: z.boolean(),
@@ -42,12 +38,12 @@ const WritingPage = () => {
                 body: JSON.stringify({
                     session: userId,  // use userId as session for now; when replacing with the actual session, remember to update getAuthorName method in article.js in backend.
                     title: data.title,
-                    summary: data.title,
+                    summary: data.summary,
                     content: data.content,
                     long: data.isSeries,
                     price: null,  // some further info about the article; to be used in the future.
                     tags: null,
-                    preId: null,
+                    preId: -1,
                 })
             });
 
@@ -108,6 +104,18 @@ const WritingPage = () => {
                         type="text"
                         placeholder="Title"
                         className="w-full text-4xl font-bold border-0 focus:ring-0 placeholder-gray-400"
+                    />
+                    {errors.title && (
+                        <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
+                    )}
+                </div>
+
+                <div>
+                    <input
+                        {...register('summary')}
+                        type="text"
+                        placeholder="Summary"
+                        className="w-full text-2xl font-bold border-0 focus:ring-0 placeholder-gray-400"
                     />
                     {errors.title && (
                         <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
