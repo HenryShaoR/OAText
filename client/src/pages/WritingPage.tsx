@@ -10,7 +10,7 @@ const postSchema = z.object({
     title: z.string().min(1, 'Title is required').max(100, 'Your title is too long'),
     summary: z.string().min(1, 'Summary is required').max(100, 'Your summary is too long'),
     content: z.string().min(1, 'Content is required'),
-    coverImage: z.string().url('Please enter a valid image URL'),
+    cover: z.string().url('Please enter a valid image URL'),
     isSeries: z.boolean(),
     seriesName: z.string().optional(),
 });
@@ -80,7 +80,7 @@ const WritingPage = () => {
                     </label>
                     <div className="flex items-center space-x-4">
                         <input
-                            {...register('coverImage')}
+                            {...register('cover')}
                             type="text"
                             placeholder="Enter image URL"
                             className="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500"
@@ -93,8 +93,8 @@ const WritingPage = () => {
                             <span>Browse</span>
                         </button>
                     </div>
-                    {errors.coverImage && (
-                        <p className="mt-1 text-sm text-red-600">{errors.coverImage.message}</p>
+                    {errors.cover && (
+                        <p className="mt-1 text-sm text-red-600">{errors.cover.message}</p>
                     )}
                 </div>
 

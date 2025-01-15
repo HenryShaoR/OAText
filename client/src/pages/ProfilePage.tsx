@@ -14,7 +14,7 @@ const ProfilePage = () => {
     const [loading, setLoading] = useState<boolean>(true);
 
     useEffect(() => {
-        const getArticle = async (articleId: number) => {
+        const getArticle = async (articleId: number, user: any) => {
             try {
                 let post: any = {};
                 const response = await fetch(`${server}/v1/article/${articleId}`, {
@@ -28,11 +28,13 @@ const ProfilePage = () => {
                     post.title = result.title;
                     post.content = result.content;
                     post.author = user;
-                    post.publishedAt = result.publishTime;
+                    post.publishedTime = result.publishTime;
                     post.likes = result.likes;
                     post.isSeries = result.isSeries;
                     post.readTime = result.readTime;
-                    post.coverImage = result.cover;
+                    post.cover = result.cover;
+
+                    post.state = user.library.indexOf(post.id) > -1;
                     return post;
                 } else {
                     popup(result.error);
@@ -59,10 +61,11 @@ const ProfilePage = () => {
                     userInfo.following = result.following.length;
                     userInfo.avatar = result.avatar;
                     userInfo.bio = result.bio;
+                    userInfo.library = result.library;
                     setUser(userInfo);
                     let postsPromise: any[] = [];
                     for (let post of result.publications) {
-                        postsPromise.push(getArticle(post));
+                        postsPromise.push(getArticle(post, userInfo));
                     }
                     setPost(await Promise.all(postsPromise));
                     setLoading(false);
@@ -121,7 +124,7 @@ const ProfilePage = () => {
             <div className="space-y-8">
                 <h2 className="text-2xl font-bold">Published Stories</h2>
                 {userPosts.map(post => (
-                    <PostCard key={post.id} post={post}/>
+                    <PostCard key={post.id} post={post} userId={id} state={post.state}/>
                 ))}
             </div>
         </div>

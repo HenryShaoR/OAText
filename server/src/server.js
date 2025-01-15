@@ -21,7 +21,7 @@ import {
     articleUpdate,
     articleUpload,
     addComment,
-    getArticleDetails
+    getArticleDetails, bookmark
 } from "./article.js";
 
 import cors from "cors";
@@ -87,18 +87,6 @@ app.put("/v1/user/update", async (req, res) => {
     }
 });
 
-// app.put("/v1/user/email", async (req, res) => {
-//     let { newEmail, userId } = req.body;
-//     userId = parseInt(userId);
-//
-//     try {
-//         res.status(SUCCESS).json(await userEmailUpdate(userId, newEmail));
-//     }
-//     catch (error) {
-//         res.status(BAD).json({ error: error.message });
-//     }
-// });
-
 app.put("/v1/user/password", async (req, res) => {
     let { oldPassword, newPassword, userId } = req.body;
     userId = parseInt(userId);
@@ -140,6 +128,18 @@ app.post('/v1/article/:articleId/comment', async (req, res) => {
 
     try {
         const comment = await addComment([articleId], parseInt(userId), content);
+        res.status(SUCCESS).json(comment);
+    } catch (error) {
+        res.status(BAD).json({ error: error.message });
+    }
+});
+
+app.post('/v1/article/:articleId/bookmark/:userId', async (req, res) => {
+    const articleId = parseInt(req.params.articleId);
+    const userId = parseInt(req.params.userId);
+
+    try {
+        const comment = await bookmark(articleId, userId);
         res.status(SUCCESS).json(comment);
     } catch (error) {
         res.status(BAD).json({ error: error.message });
@@ -218,13 +218,3 @@ app.post('/v1/verifyCode', async (req, res) => {
         res.status(BAD).json({ error: error.message });
     }
 });
-
-// app.put('/v1/user/notifications', async (req, res) => {
-//     const { id, preference } = req.body;
-//
-//     try {
-//         res.status(SUCCESS).json(await updateEmailPreference(id, preference));
-//     } catch (error) {
-//         res.status(BAD).json({ error: error.message });
-//     }
-// })

@@ -55,7 +55,6 @@ const SettingsPage: React.FC = () => {
             }).then(res => {
                 res.json().then((userData) => {
                     if (res.ok) {
-                        console.log(userData);
                         reset({
                             name: userData.username || "",
                             email: userData.email || "",

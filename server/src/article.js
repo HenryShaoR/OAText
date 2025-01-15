@@ -158,3 +158,22 @@ export async function getArticleDetails(articleId) {
 export async function addComment(articleId, userId, commentContent) {
     return await addComments(articleId, userId, commentContent);
 }
+
+export async function bookmark(articleId, userId) {
+    const [article, user] = await solve(getDataById(Target.article, articleId), getDataById(Target.user, userId));
+    if (!article) {
+        throw new Error('Invalid article ID.');
+    }
+    if (!user) {
+        throw new Error('Invalid user ID.');
+    }
+
+    const index = user.library.indexOf(articleId);
+    if (index > -1) {
+        user.library.splice(index, 1);
+    } else {
+        user.library.push(articleId);
+    }
+    await updateData(user);
+    return {};
+}

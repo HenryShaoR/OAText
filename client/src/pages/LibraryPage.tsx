@@ -10,10 +10,21 @@ const LibraryPage = () => {
     const cookies = readCookies();
     const id = cookies.id;
     const [loading, setLoading] = useState<boolean>(true);
-    let articles: any[] = [], series: any[] = [];
+    const [articles, setArticles] = useState<any[]>([]);
+    const [series, setSeries] = useState<any[]>([]);
+    let tempArticles: any = {};
+    let tempSeries: any = {}
+
+    function toArray(obj: any, maxIndex: number) {
+        const array = [];
+        for (let i = 0; i < maxIndex; i++) {
+            obj[i] ? array.push(obj[i]) : null;
+        }
+        return array;
+    }
 
     useEffect(() => {
-        const getArticle = async (articleId: number) => {
+        const getArticle = async (indexInLibrary: number, articleId: number) => {
             try {
                 let post: any = {};
                 const response = await fetch(`${server}/v1/article/${articleId}`, {
@@ -27,13 +38,13 @@ const LibraryPage = () => {
                     post.title = result.title;
                     post.content = result.content;
                     post.author = result.author;
-                    post.publishedAt = result.publishTime;
+                    post.publishedTime = result.publishTime;
                     post.likes = result.likes;
                     post.isSeries = result.isSeries;
                     post.readTime = result.readTime;
-                    post.coverImage = result.cover;
+                    post.cover = result.cover;
 
-                    post.isSeries? series.push(post) : articles.push(post);
+                    (post.isSeries ? tempSeries: tempArticles)[indexInLibrary] = post;
                 } else {
                     popup(result.error);
                 }
@@ -53,10 +64,12 @@ const LibraryPage = () => {
 
                 if (response.ok) {
                     let postsPromise: any[] = [];
-                    for (let post of result.library) {
-                        postsPromise.push(getArticle(post));
+                    for (let i = 0; i < result.library.length; i++) {
+                        postsPromise.push(getArticle(i, result.library[i]));
                     }
                     await Promise.all(postsPromise);
+                    setArticles(toArray(tempArticles, result.library.length));
+                    setSeries(toArray(tempSeries, result.library.length));
                     setLoading(false);
                 } else {
                     popup(result.error);
@@ -104,8 +117,8 @@ const LibraryPage = () => {
 
             <div className="grid gap-8">
                 {activeTab === 'single'
-                    ? articles.map(post => <PostCard key={post.id} post={post}/>)
-                    : series.map(series => <PostCard key={series.id} post={series}/>)
+                    ? articles.map(post => <PostCard key={post.id} post={post} userId={id} state={true}/>)
+                    : series.map(series => <PostCard key={series.id} post={series} userId={id} state={true}/>)
                 }
             </div>
         </div>
