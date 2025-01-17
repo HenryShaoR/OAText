@@ -1,4 +1,4 @@
-import React, {useEffect} from "react";
+import React, {useEffect, useState} from "react";
 import {Save} from "../asserts/icons";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
@@ -7,6 +7,7 @@ import {server} from "../utils/address";
 import {clearCookies, readCookies} from "../utils/cookies"
 import {useNavigate} from "react-router-dom";
 import {popup} from "../utils/popup.ts";
+import {Loading} from "../asserts/loading.tsx";
 
 const settingsSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
@@ -47,6 +48,8 @@ const SettingsPage: React.FC = () => {
 
     const cookies = readCookies();
     const userId = cookies.id;
+    const [loading, setLoading] = useState<boolean>(true);
+    const [updating, setUpdating] = useState<boolean>(false);
 
     useEffect(() => {
         try {
@@ -66,27 +69,30 @@ const SettingsPage: React.FC = () => {
                                 newMessage: false,
                             },
                         });
+                        setLoading(false);
                     } else {
                         console.error(`Response code ${res.status}: ${userData.error}`);
                         clearCookies();
                         navigate("/login");
-                        popup("Authentication Failed, Please Login Again");
+                        popup("Unable to Fetch Your Details, Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.");
                     }
                 });
             }).catch((error) => {
                 console.error("Failed to connect:", error);
-                popup("Server Unreachable, Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.");
+                navigate("/login");
+                popup("Unable to Fetch Your Details, Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.");
             });
         } catch (error) {
             console.error("Failed to fetch user details:", error);
             clearCookies();
             navigate("/login");
-            popup("Authentication Failed, Please Login Again");
+            popup("Unable to Fetch Your Details, Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.");
         }
     }, [reset, userId]);
 
 
     const onSubmit = async (data: SettingsFormData) => {
+        setUpdating(true);
         try {
             const res = await fetch(`${server}/v1/user/update`, {
                 method: "PUT",
@@ -123,7 +129,12 @@ const SettingsPage: React.FC = () => {
             console.error("Error updating settings:", err);
             popup("Failed to update settings.");
         }
+        setUpdating(false);
     };
+
+    if (loading) {
+        return <Loading/>;
+    }
 
     return (
         <div className="max-w-2xl mx-auto" /* Add some margin (especially marginTop) */ >
@@ -131,10 +142,20 @@ const SettingsPage: React.FC = () => {
                 <h1 className="text-3xl font-bold">Settings</h1>
                 <button
                     onClick={handleSubmit(onSubmit)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+                    className="flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    <Save className="w-5 h-5"/>
-                    <span>Save Changes</span>
+                    {
+                        updating ?
+                            <div className="flex flex-row items-center space-x-2">
+                                <Loading message="" scale={0.2} color="#fff"/>
+                                <p className="text-nowrap">Saving</p>
+                            </div>
+                            :
+                            <div className="flex flex-row items-center space-x-2">
+                                <Save className="w-5 h-5"/>
+                                <p className="text-nowrap">Save Changes</p>
+                            </div>
+                    }
                 </button>
             </div>
 
