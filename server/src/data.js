@@ -245,7 +245,7 @@ export async function getUserBy(type, value) {
 }
 
 export function getSessionIndex(user, sessionId) {
-    return user.activeSessions.findIndex(element => element === sessionId);
+    return user.activeSessions.indexOf(sessionId);
 }
 
 export function appendSession(user) {

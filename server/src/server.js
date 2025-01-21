@@ -4,7 +4,7 @@ import {
     SUCCESS,
     BAD,
     UNAUTHORIZED,
-    FORBIDDEN
+    FORBIDDEN, NOT_FOUND
 } from "./utils/statusCode.js";
 
 import {
@@ -14,7 +14,7 @@ import {
     userDetail,
     userDetailUpdate,
     userPasswordUpdate,
-    userDelete, follow, like,
+    userDelete, follow, like, updatePassword, verifyPassword,
 } from "./user.js";
 
 import {
@@ -117,7 +117,8 @@ app.delete('/v1/user/:userId/delete', async (req, res) => {
     const { password } = req.body;
 
     try {
-        res.status(SUCCESS).json(await userDelete(userId, password));
+        // res.status(SUCCESS).json(await userDelete(userId, password));
+        res.status(SUCCESS).json(await userDelete(userId));
     }
     catch (error) {
         res.status(BAD).json({ error: error.message });
@@ -249,6 +250,7 @@ app.post('/v2/:type/:action/:id', async (req, res) => {
     const action = req.params.action;
     const id = parseInt(req.params.id);
     const { requestFields, responseFields } = req.body;
+    let NotFound = false;
     try {
         const responseBody = await (async () => {
             switch (type) {
@@ -284,6 +286,7 @@ app.post('/v2/:type/:action/:id', async (req, res) => {
                         case "like":
                             return await like(id, requestFields.id);
                         default:
+                            NotFound = true;
                             throw new Error(`Invalid action "${action}" for article`);
                     }
                 case "user":
@@ -299,10 +302,15 @@ app.post('/v2/:type/:action/:id', async (req, res) => {
                                 requestFields.email,
                                 requestFields.preference);
                         case "delete":
-                            return await userDelete(id, requestFields.password);
+                            return await userDelete(id);
                         case "follow":
                             return await follow(id, requestFields.id);
+                        case "passwordVerify":
+                            return await verifyPassword(id, requestFields.password);
+                        case "passwordUpdate":
+                            return await updatePassword(id, requestFields.password);
                         default:
+                            NotFound = true;
                             throw new Error(`Invalid action "${action}" for user`);
                     }
                 case "auth":
@@ -317,12 +325,13 @@ app.post('/v2/:type/:action/:id', async (req, res) => {
                         case "logout":
                             return await userSignOut(
                                 id,
-                                requestFields.session);
+                                parseInt(requestFields.session));
                         case "sendCode":
                             return await sendCode(requestFields.email);
                         case "verifyCode":
                             return await verifyCode(requestFields.email, requestFields.code);
                         default:
+                            NotFound = true;
                             throw new Error(`Invalid action "${action}" for auth`);
                     }
                 case "search":
@@ -330,15 +339,20 @@ app.post('/v2/:type/:action/:id', async (req, res) => {
                         case "search":
                             return await search(requestFields.searchTerm);
                         default:
+                            NotFound = true;
                             throw new Error(`Invalid action "${action}" for search`);
                     }
                 default:
+                    NotFound = true;
                     throw new Error("Unknown API type");
             }
         })();
-
         res.status(SUCCESS).json(responseBody);
     } catch (error) {
-        res.status(BAD).json({ error: error.message });
+        if (NotFound) {
+            res.status(NOT_FOUND).json({ error: error.message });
+        } else {
+            res.status(BAD).json({error: error.message});
+        }
     }
 })

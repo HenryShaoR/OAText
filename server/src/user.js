@@ -101,7 +101,9 @@ export async function userSignIn(email, password) {
         throw new Error('The email and password combination does not exist.');
     }
 
-    return { sessionId: appendSession(user), id: user.id };
+    const sessionId = appendSession(user);
+    await updateData(user);
+    return { sessionId: sessionId, id: user.id };
 }
 
 /**
@@ -216,21 +218,18 @@ export async function userPasswordUpdate(userId, oldPassword, newPassword) {
     return {};
 }
 
-export async function userDelete(userId, password) {
+export async function userDelete(userId) {
     let user = await getDataById(Target.user, userId);
 
     if (user === null) {
         throw new Error("The user doesn't exist.");
     }
 
-    if (user.password !== password) {
-        throw new Error("The password doesn't match the existing password.");
-    }
-
     user.username = "This Account Has Been Deleted"; // change in future
 
     await updateData(user);
-    return {};
+    // return {};
+    throw new Error("STUB!!");
 }
 
 export async function follow(targetId, followerId) {
@@ -255,6 +254,24 @@ export async function like(articleId, likerId) {
     }
     await updateData(article);
     return {};
+}
+
+export async function updatePassword(id, newPassword) {
+    const user = await getDataById(Target.user, id);
+    if (user === null) {
+        throw new Error("The user doesn't exist.");
+    }
+    user.password = newPassword;
+    await updateData(user);
+    return {};
+}
+
+export async function verifyPassword(id, password) {
+    const user = await getDataById(Target.user, id);
+    if (user === null) {
+        throw new Error("The user doesn't exist.");
+    }
+    return {verified: user.password === password};
 }
 
 // export async function updateEmailPreference(userId, preference) {
