@@ -50,6 +50,7 @@ async function getAuthorId(session) {  // to be replaced in future
  * Add new article from user to database
  *
  * @param {Session} session - User's session used to add new article
+ * @param {string} cover - Cover image URL
  * @param {string} title - The new article's name
  * @param {string} summary - The new article's summary
  * @param {string} content - The new article's text content
@@ -59,7 +60,7 @@ async function getAuthorId(session) {  // to be replaced in future
  * @param {number} previousArticleId - Previous chapter's article's id
  * @returns return empty object if upload success
  */
-export async function articleUpload(session, title, summary, content, long, price,
+export async function articleUpload(session, cover, title, summary, content, long, price,
     tags, previousArticleId) {
 
     validate(session, title, summary, content);
@@ -77,7 +78,7 @@ export async function articleUpload(session, title, summary, content, long, pric
     await addData(newArticle(
         articleId,
         authorId,
-        "",
+        cover,
         title,
         summary,
         content,
@@ -103,6 +104,7 @@ export async function articleUpload(session, title, summary, content, long, pric
  * Add new article from user to database
  *
  * @param {Session} session - User's session used to add new article
+ * @param {string} url - Cover image URL
  * @param {string} title - The new article's name
  * @param {string} summary - The new article's summary
  * @param {string} content - The new article's text content
@@ -112,7 +114,7 @@ export async function articleUpload(session, title, summary, content, long, pric
  * @param {number} targetArticleId
  * @param {number} nextArticle - the id of the next article
  */
-export async function articleUpdate(session, title, summary, content, isSeries, price, tags, targetArticleId, nextArticle) {
+export async function articleUpdate(session, url, title, summary, content, isSeries, price, tags, targetArticleId, nextArticle) {
     validate(session, title, summary, content);
 
     const [validNextArticle, article] = await solve(isValidArticle(nextArticle), getDataById(Target.article, targetArticleId));

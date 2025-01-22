@@ -1,4 +1,5 @@
 import express from "express";
+import BodyParser from "body-parser";
 
 import {
     SUCCESS,
@@ -28,13 +29,16 @@ import cors from "cors";
 import {sendCode, verifyCode} from "./email.js";
 import {getDataById, getPartialData, search} from "./data.js";
 import {Target} from "./const.js";
+import bodyParser from "body-parser";
 
 export const app = express();
 
 // Use middleware that allows us to access the JSON body of requests
+app.use(bodyParser.json({ limit: "2mb" }));
+app.use(bodyParser.urlencoded({ limit: "2mb", extended: true }));
+
 app.use(express.json());
 app.use(cors()); // use cors to allow cross-origin
-
 
 // API for all the features
 /******************************   Legacy APIs   ******************************/
@@ -265,6 +269,7 @@ app.post('/v2/:type/:action/:id', async (req, res) => {
                         case "upload":
                             return await articleUpload(
                                 requestFields.session,
+                                requestFields.cover,
                                 requestFields.title,
                                 requestFields.summary,
                                 requestFields.content,
@@ -275,6 +280,7 @@ app.post('/v2/:type/:action/:id', async (req, res) => {
                         case "update":
                             return await articleUpdate(
                                 requestFields.session,
+                                requestFields.cover,
                                 requestFields.title,
                                 requestFields.summary,
                                 requestFields.content,

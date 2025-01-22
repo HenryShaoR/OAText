@@ -19,6 +19,7 @@
     "validator": "13.12.0"
   },
   "devDependencies": {
+    "body-parser": "^2.0.2",
     "mongodb": "^6.12.0"
   }
 }
