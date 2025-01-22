@@ -26,7 +26,7 @@ import {solve} from "./utils/asyncUtils.js";
  * @param {string} email - The new user's Email
  * @param {string} password - The new user's password
  * @param {string} username - The new user's username
- * @returns {number} Return a unique ID for the new user
+ * @returns {Promise<number>} Return a unique ID for the new user
  * if the registration is successful
  */
 export async function userSignup(email, password, username) {
@@ -132,14 +132,6 @@ export async function userSignOut(userId, sessionId) {
     return {};
 }
 
-export async function userDetail(id) {
-    const user = await getDataById(Target.user, id);
-    if (user === null) {
-        throw new Error("The user doesn't exist.");
-    }
-    return user;
-}
-
 export async function userDetailUpdate(userId, avatar, username, bio, email, preference) {
 
     const [user, emailExists, usernameExists] = await solve(getDataById(Target.user, userId), getUserBy('email', email), getUserBy('username', username));
@@ -175,49 +167,6 @@ export async function userDetailUpdate(userId, avatar, username, bio, email, pre
     return {};
 }
 
-// export async function userEmailUpdate(userId, newEmail) {
-//     if (!isValidEmail(newEmail)) {
-//         throw new Error('Invalid email format.');
-//     }
-//
-//     const [user, email] = await solve(getDataById(Target.user, userId), getUserBy('email', newEmail));
-//
-//     if (user === null) {
-//         throw new Error("The user doesn't exist.");
-//     }
-//
-//     if (email) {
-//         throw new Error('This email has already being used.');
-//     }
-//     user.email = newEmail;
-//     await updateData(user);
-//     return {};
-// }
-
-export async function userPasswordUpdate(userId, oldPassword, newPassword) {
-    if (!isValidPassword(newPassword)) {
-        throw new Error('Password too weak, you must have at least 6 characters with at least 1 number or 1 letter.');
-    }
-
-    let user = await getDataById(Target.user, userId);
-
-    if (user === null) {
-        throw new Error("The user doesn't exist.");
-    }
-
-    if (user.password !== oldPassword) {
-        throw new Error("The password doesn't match the existing password.");
-    }
-
-    if (user.password === newPassword) {
-        throw new Error("New password cannot match the old password.");
-    }
-
-    user.password = newPassword;
-    await updateData(user);
-    return {};
-}
-
 export async function userDelete(userId) {
     let user = await getDataById(Target.user, userId);
 
@@ -228,8 +177,8 @@ export async function userDelete(userId) {
     user.username = "This Account Has Been Deleted"; // change in future
 
     await updateData(user);
-    // return {};
     throw new Error("STUB!!");
+    // return {};
 }
 
 export async function follow(targetId, followerId) {
@@ -273,16 +222,3 @@ export async function verifyPassword(id, password) {
     }
     return {verified: user.password === password};
 }
-
-// export async function updateEmailPreference(userId, preference) {
-//     let user = await getDataById(Target.user, userId);
-//
-//     if (user === null) {
-//         throw new Error("The user doesn't exist.");
-//     }
-//
-//     user.emailPreference = preference;
-//
-//     await updateData(user);
-//     return {};
-// }

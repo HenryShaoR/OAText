@@ -1,20 +1,15 @@
 import express from "express";
-import BodyParser from "body-parser";
-
 import {
     SUCCESS,
     BAD,
-    UNAUTHORIZED,
-    FORBIDDEN, NOT_FOUND
+    NOT_FOUND
 } from "./utils/statusCode.js";
 
 import {
     userSignup,
     userSignIn,
     userSignOut,
-    userDetail,
     userDetailUpdate,
-    userPasswordUpdate,
     userDelete, follow, like, updatePassword, verifyPassword,
 } from "./user.js";
 
@@ -22,7 +17,7 @@ import {
     articleUpdate,
     articleUpload,
     addComment,
-    getArticleDetails, bookmark
+    bookmark
 } from "./article.js";
 
 import cors from "cors";
@@ -30,6 +25,7 @@ import {sendCode, verifyCode} from "./email.js";
 import {getDataById, getPartialData, search} from "./data.js";
 import {Target} from "./const.js";
 import bodyParser from "body-parser";
+import {createChat, sendMessage} from "./chat.js";
 
 export const app = express();
 
@@ -39,215 +35,6 @@ app.use(bodyParser.urlencoded({ limit: "2mb", extended: true }));
 
 app.use(express.json());
 app.use(cors()); // use cors to allow cross-origin
-
-// API for all the features
-/******************************   Legacy APIs   ******************************/
-
-
-app.post('/v1/signup', async (req, res) => {
-    console.warn("!!DEPRECATED!!");
-    const { email, password, username } = req.body;
-    try {
-        res.status(SUCCESS).json(await userSignup(email, password, username));
-    }
-    catch (error) {
-        res.status(BAD).json({ error: error.message });
-    }
-});
-
-app.post('/v1/signin', async (req, res) => {
-    console.warn("!!DEPRECATED!!");
-    const { email, password } = req.body;
-    try {
-        res.status(SUCCESS).json(await userSignIn(email, password));
-    }
-    catch (error) {
-        res.status(BAD).json({ error: error.message });
-    }
-});
-
-app.post('/v1/signout', async (req, res) => {
-    console.warn("!!DEPRECATED!!");
-    const userId = parseInt((req.body.userId).toString());
-    const sessionId = parseInt((req.body.sessionId).toString());
-    try {
-        res.status(SUCCESS).json(await userSignOut(userId, sessionId));
-    }
-    catch (error) {
-        res.status(BAD).json({ error: error.message });
-    }
-});
-
-app.get('/v1/user/:userId', async (req, res) => {
-    console.warn("!!DEPRECATED!!");
-    const userId = parseInt((req.params.userId).toString());
-    try {
-        res.status(SUCCESS).json(await userDetail(userId));
-    }
-    catch (error) {
-        res.status(BAD).json({ error: error.message });
-    }
-});
-
-app.put("/v1/user/update", async (req, res) => {
-    console.warn("!!DEPRECATED!!");
-    let {  userId, avatar, username, bio, email, preference} = req.body;
-    userId = parseInt(userId);
-
-    try {
-        res.status(SUCCESS).json(await userDetailUpdate(userId, avatar, username, bio, email, preference));
-    }
-    catch (error) {
-        res.status(BAD).json({ error: error.message });
-    }
-});
-
-app.put("/v1/user/password", async (req, res) => {
-    console.warn("!!DEPRECATED!!");
-    let { oldPassword, newPassword, userId } = req.body;
-    userId = parseInt(userId);
-
-    try {
-        res.status(SUCCESS).json(await userPasswordUpdate(userId, oldPassword, newPassword));
-    }
-    catch (error) {
-        res.status(BAD).json({ error: error.message });
-    }
-});
-
-app.delete('/v1/user/:userId/delete', async (req, res) => {
-    console.warn("!!DEPRECATED!!");
-    const userId = parseInt((req.params.userId).toString());
-    const { password } = req.body;
-
-    try {
-        // res.status(SUCCESS).json(await userDelete(userId, password));
-        res.status(SUCCESS).json(await userDelete(userId));
-    }
-    catch (error) {
-        res.status(BAD).json({ error: error.message });
-    }
-});
-
-app.get('/v1/article/:articleId', async (req, res) => {
-    console.warn("!!DEPRECATED!!");
-    const articleId = parseInt(req.params.articleId);
-
-    try {
-        const article = await getArticleDetails(articleId);
-        res.status(SUCCESS).json(article);
-    } catch (error) {
-        res.status(BAD).json({ error: error.message });
-    }
-});
-
-app.post('/v1/article/:articleId/comment', async (req, res) => {
-    console.warn("!!DEPRECATED!!");
-    const articleId = parseInt(req.params.articleId);
-    const { userId, content } = req.body;
-
-    try {
-        const comment = await addComment([articleId], parseInt(userId), content);
-        res.status(SUCCESS).json(comment);
-    } catch (error) {
-        res.status(BAD).json({ error: error.message });
-    }
-});
-
-app.post('/v1/article/:articleId/bookmark/:userId', async (req, res) => {
-    console.warn("!!DEPRECATED!!");
-    const articleId = parseInt(req.params.articleId);
-    const userId = parseInt(req.params.userId);
-
-    try {
-        const comment = await bookmark(articleId, userId);
-        res.status(SUCCESS).json(comment);
-    } catch (error) {
-        res.status(BAD).json({ error: error.message });
-    }
-});
-
-app.post('/v1/comment/reply', async (req, res) => {
-    console.warn("!!DEPRECATED!!");
-    const { parentIds, userId, content } = req.body;
-
-    try {
-        const comment = await addComment(parentIds, parseInt(userId), content);
-        res.status(SUCCESS).json(comment);
-    } catch (error) {
-        res.status(BAD).json({ error: error.message });
-    }
-});
-
-app.post('/v1/article/upload', async (req, res) => {
-    console.warn("!!DEPRECATED!!");
-    const {session, title, summary, content, long, price, tags, preId} = req.body;
-
-    try {
-        res.status(SUCCESS).json(await articleUpload(
-            session,
-            title,
-            summary,
-            content,
-            JSON.parse(long),
-            parseFloat(price),
-            tags,
-            parseInt(preId)));
-    } catch (error) {
-        res.status(BAD).json({ error: error.message });
-    }
-});
-
-app.put('/v1/article/:articleId/update', async (req, res) => {
-    console.warn("!!DEPRECATED!!");
-    const {session, title, summary, content, rating, long, price, tags, preId} = req.body;
-    const articleId = parseInt(req.params.articleId);
-
-    try {
-        res.status(SUCCESS).json(articleUpdate(
-            session,
-            title,
-            summary,
-            content,
-            parseFloat(rating),
-            JSON.parse(long),
-            parseFloat(price),
-            tags,
-            articleId,
-            parseInt(preId)));
-    } catch (error) {
-        res.status(BAD).json({ error: error.message });
-    }
-});
-
-app.post('/v1/search/:searchTerm', async (req, res) => {
-    console.warn("!!DEPRECATED!!");
-});
-
-app.post('/v1/sendCode', async (req, res) => {
-    console.warn("!!DEPRECATED!!");
-    const { email } = req.body;
-
-    try {
-        res.status(SUCCESS).json(await sendCode(email));
-    } catch (error) {
-        res.status(BAD).json({ error: error.message });
-    }
-});
-
-app.post('/v1/verifyCode', async (req, res) => {
-    console.warn("!!DEPRECATED!!");
-    const { email, code } = req.body;
-
-    try {
-        res.status(SUCCESS).json(await verifyCode(email, code));
-    } catch (error) {
-        res.status(BAD).json({ error: error.message });
-    }
-});
-
-/******************************   All in One API   ******************************/
-
 
 app.post('/v2/:type/:action/:id', async (req, res) => {
     const type = req.params.type;
@@ -318,6 +105,20 @@ app.post('/v2/:type/:action/:id', async (req, res) => {
                         default:
                             NotFound = true;
                             throw new Error(`Invalid action "${action}" for user`);
+                    }
+                case "chat":
+                    switch (action) {
+                        case "get":
+                            return requestFields.length > 0? await getPartialData(Target.chat, id, responseFields) : await getDataById(Target.chat, id);
+                        case "new":
+                            return await createChat(requestFields.members, requestFields.groupName);
+                        case "messageGet":
+                            return requestFields.length > 0? await getPartialData(Target.message, id, responseFields) : await getDataById(Target.message, id);
+                        case "messageSend":
+                            return await sendMessage(id, parseInt(requestFields.id), requestFields.body);
+                        default:
+                            NotFound = true;
+                            throw new Error(`Invalid action "${action}" for chat`);
                     }
                 case "auth":
                     switch (action) {

@@ -126,13 +126,15 @@ export function newArticle(id, author, cover, title, summary, content, isSeries,
 }
 
 /**
+ * @param {number} id
  * @param {number} sender
  * @param {Date} sendTime
  * @param {string} body
  */
-export function newMessage(sender, sendTime, body) {
+export function newMessage(id, sender, sendTime, body) {
     return {
         _type: 'message',
+        id: id,
         sender: sender,
         sendTime: sendTime,
         body: body,
@@ -146,21 +148,24 @@ export function newMessage(sender, sendTime, body) {
  * @param {Message[]} messages
  * @param {Date} createTime
  * @param {string} groupName
+ * @param {string} avatar
  */
-export function newChat(id, members, messages, createTime, groupName) {
+export function newChat(id, members, messages, createTime, groupName, avatar) {
     return {
-        _type: 'room',
+        _type: 'chat',
         id: id,
         members: members,
+        messages: messages,
         createTime: createTime,
         groupName: groupName,
+        avatar: avatar,
     };
 }
 
 
 /**
  *
- * @param {string} target what data is getting (users/articles/rooms)
+ * @param {string} target what data is getting (users/articles/chats)
  * @param {number} id the value of id
  * @return {Object}
  */
@@ -174,10 +179,9 @@ export async function getData(target, query) {
 
 /**
  *
- * @param {string} target what data is getting (users/articles/rooms)
+ * @param {string} target what data is getting (users/articles/chats)
  * @param {number} id the value of id
  * @param {string[]} elements the elements required
- * @returns {{}}
  */
 export async function getPartialData(target, id, elements) {
     let obj = {};

@@ -12,14 +12,16 @@ export const Target = {
     user: "users",
     users: "users",
     a: "articles",
+    post: "articles",
     article: "articles",
     articles: "articles",
-    r: "rooms",
-    room: "rooms",
-    rooms: "rooms",
-    i: "images",
-    image: "images",
-    images: "images",
+    c: "chats",
+    chat: "chats",
+    chats: "chats",
+    m: "messages",
+    msg: "message",
+    message: "messages",
+    messages: "messages",
 };
 
 export const Status = {
