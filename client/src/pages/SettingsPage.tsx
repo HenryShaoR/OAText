@@ -15,7 +15,7 @@ const settingsSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
     email: z.string().email('Invalid email address'),
     bio: z.string().max(160, 'Bio must be less than 160 characters'),
-    avatar: z.string().url('Invalid image URL'),
+    avatar: z.string().url('Invalid avatar image'),
     emailNotifications: z.object({
         newFollower: z.boolean(),
         newComment: z.boolean(),
@@ -335,8 +335,12 @@ const SettingsPage: React.FC = () => {
                         <ImageUpload
                             onUpload={(url) => setValue('avatar', url)}
                             defaultImage={avatarUrl}
-                            className="w-32 h-32 flex-shrink-0"
+                            className="w-32 h-fit flex-shrink-0"
+                            prompt={false}
                         />
+                        {errors.avatar && (
+                            <p className="mt-1 text-sm text-red-600">{errors.avatar.message}</p>
+                        )}
                     </div>
 
                     <div>

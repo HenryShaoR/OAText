@@ -25,14 +25,12 @@ import {sendCode, verifyCode} from "./email.js";
 import {getDataById, getPartialData, search} from "./data.js";
 import {Target} from "./const.js";
 import bodyParser from "body-parser";
-import {createChat, sendMessage} from "./chat.js";
+import {createChat, sendMessage, updateChat} from "./chat.js";
 
 export const app = express();
 
-// Use middleware that allows us to access the JSON body of requests
 app.use(bodyParser.json({ limit: "2mb" }));
 app.use(bodyParser.urlencoded({ limit: "2mb", extended: true }));
-
 app.use(express.json());
 app.use(cors()); // use cors to allow cross-origin
 
@@ -111,7 +109,9 @@ app.post('/v2/:type/:action/:id', async (req, res) => {
                         case "get":
                             return requestFields.length > 0? await getPartialData(Target.chat, id, responseFields) : await getDataById(Target.chat, id);
                         case "new":
-                            return await createChat(requestFields.members, requestFields.groupName);
+                            return await createChat(requestFields.members.map(Number), requestFields.groupName, requestFields.avatar);
+                        case "update":
+                            return await updateChat(id, requestFields.id, requestFields.members.map(Number), requestFields.groupName, requestFields.avatar);
                         case "messageGet":
                             return requestFields.length > 0? await getPartialData(Target.message, id, responseFields) : await getDataById(Target.message, id);
                         case "messageSend":

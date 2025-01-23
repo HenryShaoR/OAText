@@ -7,6 +7,7 @@ interface ImageUploadProps {
     onUpload: (url: string) => void;
     defaultImage?: string;
     className?: string;
+    prompt?: boolean;
 }
 
 export const compressImage = async (file: File) => {
@@ -24,7 +25,7 @@ export const compressImage = async (file: File) => {
     }
 };
 
-const ImageUpload = ({ onUpload, defaultImage, className = '' }: ImageUploadProps) => {
+const ImageUpload = ({ onUpload, defaultImage, className = '', prompt = true }: ImageUploadProps) => {
     const [isUploading, setIsUploading] = useState(false);
     const [previewUrl, setPreviewUrl] = useState(defaultImage);
     const [isDragging, setIsDragging] = useState(false);
@@ -107,28 +108,26 @@ const ImageUpload = ({ onUpload, defaultImage, className = '' }: ImageUploadProp
                         alt="Preview"
                         className="w-full h-full object-cover rounded-lg"
                     />
-                    <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
-                        <button
-                            type="button"
-                            onClick={handleButtonClick}
-                            className="bg-white text-gray-900 px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-gray-100 transition-colors"
-                            disabled={isUploading}
-                        >
-                            {isUploading ?
-                                <Loading /> :
-                                <>
-                                    <Upload className="w-5 h-5" />
-                                    <span>Change Image</span>
-                                </>
-                            }
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        onClick={handleButtonClick}
+                        className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg"
+                        disabled={isUploading}
+                    >
+                        {isUploading ?
+                            <Loading color="#fff"/> :
+                            <div className="flex-col justify-items-center">
+                                <Upload className="w-5 h-5 text-white" />
+                                <span className="text-white">Change</span>
+                            </div>
+                        }
+                    </button>
                 </div>
             ) : (
                 <button
                     type="button"
                     onClick={handleButtonClick}
-                    className={`w-full h-full min-h-[200px] border-2 border-dashed rounded-lg flex flex-col items-center justify-center p-6 transition-colors ${
+                    className={`w-full h-full border-2 border-dashed rounded-lg flex flex-col items-center justify-center p-6 transition-colors ${
                         isDragging
                             ? 'border-gray-400 bg-gray-50'
                             : 'border-gray-300 hover:border-gray-400'
@@ -136,12 +135,14 @@ const ImageUpload = ({ onUpload, defaultImage, className = '' }: ImageUploadProp
                     disabled={isUploading}
                 >
                     {isUploading ?
-                        <Loading /> :
+                        <Loading scale={0.3}/> :
                         <>
                             <Upload className="w-8 h-8 text-gray-400" />
-                            <span className="mt-2 text-sm text-gray-500">
-                                Drag and drop an image here, or click to select
-                            </span>
+                            { prompt &&
+                                <span className="mt-2 text-sm text-gray-500">
+                                    Drop or click to select an image
+                                </span>
+                            }
                         </>
                     }
                 </button>

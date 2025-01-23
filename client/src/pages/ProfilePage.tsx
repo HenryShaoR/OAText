@@ -21,7 +21,6 @@ const ProfilePage = () => {
     useEffect(() => {
         const getArticle = async (articleId: number, profileUser: any, loginUser: any) => {
             try {
-                let post: any = {};
                 // const response = await fetch(`${server}/v1/article/${articleId}`, {
                 //     method: 'GET'
                 // });
@@ -39,19 +38,20 @@ const ProfilePage = () => {
                 const result = await response.json();
 
                 if (response.ok) {
-                    post.id = articleId;
-                    post.title = result.title;
-                    post.content = result.content;
-                    post.author = profileUser;
-                    post.publishTime = result.publishTime;
-                    post.likes = result.likes.length;
-                    post.isSeries = result.isSeries;
-                    post.readTime = result.readTime;
-                    post.cover = result.cover;
+                    return {
+                        id: articleId,
+                        title: result.title,
+                        content: result.content,
+                        author: profileUser,
+                        publishTime: result.publishTime,
+                        likes: result.likes.length,
+                        isSeries: result.isSeries,
+                        readTime: result.readTime,
+                        cover: result.cover,
 
-                    post.bookmarkState = loginUser.library.indexOf(post.id) > -1;
-                    post.likedState = result.likes.indexOf(loginUserId) > -1;
-                    return post;
+                        bookmarkState: loginUser.library.indexOf(articleId) > -1,
+                        likedState: result.likes.indexOf(loginUserId) > -1,
+                    };
                 } else {
                     navigate("/");
                     popup(result.error);
@@ -64,7 +64,6 @@ const ProfilePage = () => {
         }
 
         const getProfileUser = async () => {
-            let user: any = {};
             try {
                 // const response = await fetch(`${server}/v1/user/${profileUserId}`, {
                 //     method: 'GET'
@@ -83,13 +82,15 @@ const ProfilePage = () => {
                 const result = await response.json();
 
                 if (response.ok) {
-                    user.id = profileUserId;
-                    user.username = result.username;
-                    user.followers = result.followers.length;
-                    user.following = result.following.length;
-                    user.avatar = result.avatar;
-                    user.bio = result.bio;
-                    user.publications = result.publications;
+                    let user: any = {
+                        id: profileUserId,
+                        username: result.username,
+                        followers: result.followers.length,
+                        following: result.following.length,
+                        avatar: result.avatar,
+                        bio: result.bio,
+                        publications: result.publications,
+                    }
 
                     if (profileUserId !== loginUserId && result.followers.indexOf(loginUserId) !== -1) {
                         setFollowing(true);
@@ -97,10 +98,9 @@ const ProfilePage = () => {
 
                     setUser(user);
                     return user;
-                } else {
-                    navigate("/login");
-                    popup(result.error);
                 }
+                navigate("/login");
+                popup(result.error);
             } catch (error) {
                 console.error(error);
                 navigate("/login");
@@ -109,7 +109,6 @@ const ProfilePage = () => {
         }
 
         const getLoginUser = async () => {
-            let user: any = {};
             try {
                 const response = await fetch(`${server}/v2/user/get/${loginUserId}`, {
                     method: 'POST',
@@ -125,8 +124,9 @@ const ProfilePage = () => {
                 const result = await response.json();
 
                 if (response.ok) {
-                    user.library = result.library;
-                    return user;
+                    return {
+                        library: result.library,
+                    };
                 } else {
                     navigate("/login");
                     popup(result.error);

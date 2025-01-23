@@ -63,4 +63,5 @@ export interface Chat {
     members: User[];
     messages: Message[];
     groupName: string;
+    avatar: string;
 }

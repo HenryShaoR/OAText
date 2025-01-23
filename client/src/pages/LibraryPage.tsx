@@ -65,7 +65,6 @@ const LibraryPage = () => {
 
         const getArticle = async (indexInLibrary: number, articleId: number) => {
             try {
-                let post: any = {};
                 // const response = await fetch(`${server}/v1/article/${articleId}`, {
                 //     method: 'GET'
                 // });
@@ -83,18 +82,18 @@ const LibraryPage = () => {
                 const result = await response.json();
 
                 if (response.ok) {
-                    post.id = articleId;
-                    post.title = result.title;
-                    post.content = result.content;
-                    post.author = await getAuthor(result.author);
-                    post.publishTime = result.publishTime;
-                    post.likes = result.likes.length;
-                    post.isSeries = result.isSeries;
-                    post.readTime = result.readTime;
-                    post.cover = result.cover;
 
-                    post.likedState = result.likes.indexOf(id) > -1;
-                    library[indexInLibrary] = post;
+                    library[indexInLibrary] = {
+                        id: articleId,
+                        title: result.title,
+                        content: result.content,
+                        author: await getAuthor(result.author),
+                        publishTime: result.publishTime,
+                        likes: result.likes.length,
+                        isSeries: result.isSeries,
+                        readTime: result.readTime,
+                        cover: result.cover,
+                    };
                 } else {
                     navigate("/");
                     popup(result.error);

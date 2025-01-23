@@ -1,31 +1,27 @@
 import {Plus} from "../../asserts/icons.tsx";
-import {useState} from "react";
 import {Loading} from "../../asserts/loading.tsx";
 
 interface ChatListProps {
     chats: any[];
     activeChat: any | null;
     onSelectChat: (chat: any) => void;
-    newChat: () => Promise<void>;
+    newChat: () => void;
+    isCreatingChat: boolean;
 }
 
-const ChatList = ({ chats, activeChat, onSelectChat, newChat}: ChatListProps) => {
-    const [creatingChat, setCreatingChat] = useState<boolean>(false);
-
+const ChatList = ({ chats, activeChat, onSelectChat, newChat, isCreatingChat}: ChatListProps) => {
     return (
-        <div className="space-y-2">
+        <div className="space-y-2 overflow-x-hidden">
             <button
                 key="new"
-                onClick={async () => {
-                    setCreatingChat(true);
-                    await newChat();
-                    setCreatingChat(false);
+                onClick={() => {
+                    newChat();
                 }}
-                disabled={creatingChat}
-                className={`w-full p-3 rounded-lg flex items-center space-x-3 hover:bg-gray-50 border disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500`}
+                disabled={isCreatingChat}
+                className={`w-full h-16 p-3 rounded-lg flex items-center space-x-3 hover:bg-gray-50 border disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500`}
             >
                 {
-                    creatingChat ?
+                    isCreatingChat ?
                         <div className="flex flex-row items-center space-x-2">
                             <Loading message="" scale={0.3} color="#444" />
                             <p className="text-nowrap">Creating New Chat</p>
@@ -54,8 +50,11 @@ const ChatList = ({ chats, activeChat, onSelectChat, newChat}: ChatListProps) =>
                         <div className="flex-1 text-left">
                             <h3 className="font-medium">{chat.groupName}</h3>
                             {chat.lastMessage && (
-                                <p className="text-sm text-gray-500 truncate">
-                                    {chat.lastMessage.body}
+                                <p className="text-sm text-gray-500 truncate overflow-hidden">
+                                    { chat.lastMessage.body.length <= 20?
+                                        chat.lastMessage.body:
+                                        `${chat.lastMessage.body.slice(0, 20)}...`
+                                    }
                                 </p>
                             )}
                         </div>

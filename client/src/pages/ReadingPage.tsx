@@ -53,10 +53,9 @@ const ReadingPage = () => {
                 if (response.ok) {
                     setLoadingUser(false);
                     return result.library.indexOf(parseInt(`${id}`)) > -1;
-                } else {
-                    navigate("/login");
-                    popup(result.error);
                 }
+                navigate("/login");
+                popup(result.error);
             } catch (error) {
                 console.error('Login error:', error);
                 navigate("/login");
@@ -66,7 +65,6 @@ const ReadingPage = () => {
         }
 
         const getAuthor = async (uid: number) => {
-            let author: any = {};
             try {
                 // const response = await fetch(`${server}/v1/user/${uid}`, {
                 //     method: 'GET'
@@ -86,10 +84,12 @@ const ReadingPage = () => {
                 const result = await response.json();
 
                 if (response.ok) {
-                    author.id = uid;
-                    author.username = result.username;
-                    author.avatar = result.avatar;
-                    author.bio = result.bio;
+                    return {
+                        id: uid,
+                        username: result.username,
+                        avatar: result.avatar,
+                        bio: result.bio,
+                    };
                 } else {
                     navigate("/");
                     popup(result.error);
@@ -99,7 +99,6 @@ const ReadingPage = () => {
                 navigate("/");
                 popup("Unable to Fetch Author's Details, Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.");
             }
-            return author;
         }
 
         const getArticle = async () => {
@@ -121,26 +120,26 @@ const ReadingPage = () => {
                 const result = await response.json();
 
                 if (response.ok) {
-                    post.title = result.title;
-                    post.content = result.content;
-                    post.publishTime = result.publishTime;
-                    post.readTime = result.readTime;
-                    post.likes = result.likes.length;
-                    post.author = await getAuthor(result.author);
-                    post.cover = result.cover;
                     setLoadingArticle(false);
-
                     setLiked(result.likes.indexOf(userId) !== -1);
-                    return post;
-                } else {
-                    navigate("/");
-                    popup(result.error);
+                    return {
+                        title: result.title,
+                        content: result.content,
+                        publishTime: result.publishTime,
+                        readTime: result.readTime,
+                        likes: result.likes.length,
+                        author: await getAuthor(result.author),
+                        cover: result.cover,
+                    };
                 }
+                navigate("/");
+                popup(result.error);
             } catch (error) {
                 console.error(error);
                 navigate("/");
                 popup("Unable to Access the Article, Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.");
             }
+            return {}
         }
 
         const init = async () => {

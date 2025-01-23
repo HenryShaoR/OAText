@@ -7,6 +7,7 @@ import {useNavigate} from "react-router-dom";
 import {server} from "../utils/address.ts";
 import {popup} from "../utils/popup.ts";
 import {Loading} from "../asserts/loading.tsx";
+import NewChat from "../components/chat/NewChat.tsx";
 
 /**
  * @TODO
@@ -27,10 +28,10 @@ const ChatPage = () => {
     const [chats, setChats] = useState<any[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [loadingChat, setLoadingChat] = useState<boolean>(false);
+    const [isCreatingChat, setIsCreatingChat] = useState<boolean>(false);
 
     async function getMessages(id: number) {
         try {
-            let message: any = {};
             const response = await fetch(`${server}/v2/chat/messageGet/${id}`, {
                 method: "POST",
                 headers: {
@@ -45,11 +46,43 @@ const ChatPage = () => {
             const result = await response.json();
 
             if (response.ok) {
-                message.id = result.id;
-                message.sender = result.sender;
-                message.sendTime = result.sendTime;
-                message.body = result.body;
-                return message;
+                return {
+                    id: result.id,
+                    sender: result.sender,
+                    sendTime: new Date(result.sendTime),
+                    body: result.body,
+                };
+            } else {
+                popup(result.error);
+            }
+        } catch (error) {
+            console.error(error);
+            popup("Unable to Fetch Chat Details, Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.");
+        }
+    }
+
+    async function getMember(id: number) {
+        try {
+            const response = await fetch(`${server}/v2/user/get/${id}`, {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    requestFields: {},
+                    responseFields: ["avatar", "username", "id", "email"],
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                return {
+                    id: result.id,
+                    avatar: result.avatar,
+                    username: result.username,
+                    email: result.email,
+                };
             } else {
                 popup(result.error);
             }
@@ -60,6 +93,7 @@ const ChatPage = () => {
     }
 
     async function onSelect(chat: any) {
+        setIsCreatingChat(false);
         setLoadingChat(true);
         setActiveChat(null);
         const messagesPromise = [];
@@ -68,11 +102,19 @@ const ChatPage = () => {
                 getMessages(message) :
                 (async () => {return message;})());  // The message object has already being fetched
         }
-        chat.messages = await Promise.all(messagesPromise);
+
+        const membersPromise = [];
+        for (let member of chat.members) {
+            membersPromise.push(member.id === undefined ?
+                getMember(member) :
+                (async () => {return member;})());  // The message object has already being fetched
+        }
+        [chat.messages, chat.members] = await Promise.all([Promise.all(messagesPromise), Promise.all(membersPromise)]);
         setActiveChat(chat);
         setLoadingChat(false);
     }
-    async function newChat() {
+
+    async function onCreate(chat: any) {
         const members = [id];
         // select and push other participants
         try {
@@ -83,8 +125,9 @@ const ChatPage = () => {
                 },
                 body: JSON.stringify({
                     requestFields: {
-                        groupName: "New Chat",
+                        groupName: chat.groupName,
                         members: members,
+                        avatar: chat.avatar,
                     },
                     responseFields: [],
                 })
@@ -93,15 +136,18 @@ const ChatPage = () => {
             const result = await response.json();
 
             if (response.ok) {
-                const chat: any = {};
-                chat.id = result.id;
-                chat.messages = result.messages;
-                chat.members = result.members;
-                chat.groupName = result.groupName;
-                chat.avatar = result.avatar;
-                chat.lastMessage = null;
+                const chat = {
+                    id: result.id,
+                    messages: result.messages,
+                    members: result.members,
+                    groupName: result.groupName,
+                    avatar: result.avatar,
+                    lastMessage: null,
+                };
 
                 setChats(chats.concat(chat));
+                await onSelect(chat);
+                setIsCreatingChat(false);
             } else {
                 popup(result.error);
             }
@@ -113,7 +159,6 @@ const ChatPage = () => {
 
     const getChat = async (chatId: number) => {
         try {
-            let chat: any = {};
             const response = await fetch(`${server}/v2/chat/get/${chatId}`, {
                 method: "POST",
                 headers: {
@@ -128,14 +173,15 @@ const ChatPage = () => {
             const result = await response.json();
 
             if (response.ok) {
-                chat.id = result.id;
-                chat.messages = result.messages;
-                chat.members = result.members;
-                chat.groupName = result.groupName;
-                chat.avatar = result.avatar;
+                return {
+                    id: result.id,
+                    messages: result.messages,
+                    members: result.members,
+                    groupName: result.groupName,
+                    avatar: result.avatar,
 
-                chat.lastMessage = result.messages.length > 0? await getMessages(result.messages[result.messages.length - 1]) : null;
-                return chat;
+                    lastMessage: result.messages.length > 0 ? await getMessages(result.messages[result.messages.length - 1]) : null,
+                };
             } else {
                 popup(result.error);
             }
@@ -148,7 +194,6 @@ const ChatPage = () => {
     useEffect(() => {
 
         const getUser = async () => {
-            let user: any = {};
             try {
                 const response = await fetch(`${server}/v2/user/get/${id}`, {
                     method: 'POST',
@@ -164,16 +209,17 @@ const ChatPage = () => {
                 const result = await response.json();
 
                 if (response.ok) {
-                    user.activeChats = result.activeChats;
-                    return user;
-                } else {
-                    popup(result.error);
+                    return {
+                        activeChats: result.activeChats,
+                    };
                 }
+                popup(result.error);
             } catch (error) {
                 console.error(error);
                 navigate("/login");
                 popup("Unable to Fetch Your Details, Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.");
             }
+            return {};
         }
 
         const init = async () => {
@@ -195,8 +241,8 @@ const ChatPage = () => {
     }
 
     return (
-        <div className="flex h-screen -m-8">
-            <div className="w-80 border-r border-gray-200 bg-white">
+        <div className="flex h-screen -m-8 ">
+            <div className="w-80 max-h-full border-r border-gray-200 bg-white overflow-y-auto space-y-4">
                 <div className="p-4">
                     <div className="flex space-x-2 mb-4">
                         <button
@@ -234,23 +280,27 @@ const ChatPage = () => {
                     </div>
 
                     <ChatList
-                        chats={chats.filter((chat) => (chat.members.length === 2) === (chatType === 'group'))}
+                        chats={chats.filter((chat) => (chat.members.length > 2) === (chatType === 'group'))}
                         activeChat={activeChat}
                         onSelectChat={onSelect}
-                        newChat={newChat}
+                        newChat={() => setIsCreatingChat(true)}
+                        isCreatingChat={isCreatingChat}
                     />
                 </div>
             </div>
 
             <div className="flex-1 bg-gray-50">
-                { activeChat ?
-                    <ChatWindow chat={activeChat} />
+                { isCreatingChat ?
+                    <NewChat onCreate={onCreate} onCancel={async () => setIsCreatingChat(false)} />
                     :
-                    loadingChat ?
-                        <Loading /> :
-                        <div className="h-full flex items-center justify-center text-gray-500">
-                            Select a conversation to start chatting
-                        </div>
+                    activeChat ?
+                        <ChatWindow chat={activeChat} />
+                        :
+                        loadingChat ?
+                            <Loading /> :
+                            <div className="h-full flex items-center justify-center text-gray-500">
+                                Select a conversation to start chatting
+                            </div>
                 }
             </div>
         </div>

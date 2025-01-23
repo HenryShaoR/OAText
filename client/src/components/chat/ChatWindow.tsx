@@ -1,16 +1,18 @@
 import { useState } from 'react';
-import { Send } from '../../asserts/icons';
+import {Info, Send, Settings} from '../../asserts/icons';
 import {server} from "../../utils/address.ts";
 import {popup} from "../../utils/popup.ts";
 import {readCookies} from "../../utils/cookies.ts";
 import {Loading} from "../../asserts/loading.tsx";
+import ChatSettings from "./ChatSettings.tsx";
 
 
 const ChatWindow = ({ chat }: { chat: any }) => {
     const [message, setMessage] = useState<string>('');
-    const cookie = readCookies();
-    const uid = cookie.id;
+    const cookies = readCookies();
+    const uid = cookies.id;
     const [sending, setSending] = useState<boolean>(false);
+    const [showSettings, setShowSettings] = useState(false);
 
     const handleSend = async () => {
         if (message.trim()) {
@@ -33,12 +35,12 @@ const ChatWindow = ({ chat }: { chat: any }) => {
                 const result = await response.json();
 
                 if (response.ok) {
-                    const message: any = {};
-                    message.id = result.id;
-                    message.body = result.body;
-                    message.sender = result.sender;
-                    message.sendTime = result.sendTime;
-
+                    const message: any = {
+                        id: result.id,
+                        body: result.body,
+                        sender: result.sender,
+                        sendTime: new Date(result.sendTime),
+                    };
                     chat.messages.push(message);
                     chat.lastMessage = message;
                     setMessage('');
@@ -54,74 +56,131 @@ const ChatWindow = ({ chat }: { chat: any }) => {
         }
     };
 
+    const handleUpdateChat = async (updatedChat: any) => {
+        console.log('Updating chat:', updatedChat);
+        try {
+            const response = await fetch(`${server}/v2/chat/update/${chat.id}`, {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    requestFields: {
+                        groupName: updatedChat.groupName,
+                        avatar: updatedChat.avatar,
+                        members: updatedChat.members.map((obj: { id: number }) => obj.id)
+                    },
+                    responseFields: [],
+                })
+            });
+            const result = await response.json();
+            if (response.ok) {
+
+            } else {
+                popup(result.error);
+            }
+        } catch (error) {
+            console.error(error);
+            popup("Fail to update Chat, Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.");
+        }
+        setShowSettings(false);
+    };
+
+    const handleDeleteChat = () => {
+        // Here you would typically delete the chat in your backend
+
+        console.log('Deleting chat:', chat.id);
+        setShowSettings(false);
+    };
     return (
         <div className="h-full flex flex-col">
-            <div className="border-b border-gray-200 bg-white p-4">
-                <div className="flex items-center space-x-3">
-                    <img
-                        src={chat.avatar}
-                        alt={chat.groupName}
-                        className="w-10 h-10 rounded-full object-cover"
-                    />
-                    <div>
-                        <h2 className="font-medium">{chat.groupName}</h2>
-                        <p className="text-sm text-gray-500">
-                            {chat.members.length > 2 ? 'Group Chat' : 'Private Chat'}
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div className="flex-1 p-4 overflow-y-auto space-y-4">
-                {chat.messages.map((msg: any) => (
-                    <div
-                        key={msg.id}
-                        className={`flex ${
-                          msg.sender === uid ? 'justify-end' : 'justify-start'
-                        }`}
-                    >
-                        <div
-                            className={`max-w-[70%] rounded-lg p-3 ${
-                                msg.sender === uid
-                                    ? 'bg-gray-900 text-white'
-                                    : 'bg-white border border-gray-200'
-                            }`}
-                        >
-                            <p>{msg.body}</p>
-                            <span className="text-xs text-gray-400 mt-1 block">
-                                {msg.sendTime.toString()}
-                            </span>
+            {showSettings ?
+                <ChatSettings
+                    chat={chat}
+                    onClose={() => setShowSettings(false)}
+                    onUpdate={handleUpdateChat}
+                    onDelete={handleDeleteChat}
+                />
+                :
+                <>
+                    <div className="flex flex-row w-full border-b border-gray-200 bg-white py-4 px-8 h-16">
+                        <div className="flex w-full items-center space-x-3">
+                            <img
+                                src={chat.members.length > 2 ? chat.avatar : (chat.members[0].id !== uid? chat.members[0].avatar : (chat.members[1] || {}).avatar)}
+                                alt={chat.groupName}
+                                className="w-10 h-10 rounded-full object-cover"
+                            />
+                            <div>
+                                <h2 className="font-medium">
+                                    {chat.members.length > 2 ? chat.groupName : (chat.members[0].id !== uid? chat.members[0].username : (chat.members[1] || {}).username)}
+                                </h2>
+                                <p className="text-sm text-gray-500">
+                                    {chat.members.length > 2 ? 'Group Chat' : chat.groupName}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex flex-row items-center space-x-3">
+                            <button>
+                                <Info className="w-5 h-5 text-gray-600"/>
+                            </button>
+                            <button
+                                onClick={() => setShowSettings(true)}
+                                className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                                <Settings className="w-5 h-5 text-gray-600"/>
+                            </button>
                         </div>
                     </div>
-                ))}
-            </div>
-
-            <div className="border-t border-gray-200 bg-white p-4">
-                <div className="flex items-center space-x-4">
-                    <input
-                        type="text"
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        placeholder="Type a message..."
-                        className="flex-1 rounded-lg border-gray-300 focus:ring-gray-500 focus:border-gray-500 p-2"
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                handleSend().then();
-                            }
-                        }}
-                    />
-                    <button
-                        onClick={handleSend}
-                        disabled={!message.trim() || sending}
-                        className="p-2 rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-75 disabled:cursor-not-allowed"
-                    >
-                        { sending?
-                            <Loading scale={0.2} color="#fff" message=""/> :
-                            <Send className="w-5 h-5"/>
-                        }
-                    </button>
-                </div>
-            </div>
+                    <div className="flex-1 p-4 overflow-y-auto space-y-4">
+                        {chat.messages.map((msg: any) => (
+                            <div
+                                key={msg.id}
+                                className={`flex ${
+                                    msg.sender === uid ? 'justify-end' : 'justify-start'
+                                }`}
+                            >
+                                <div
+                                    className={`max-w-[70%] rounded-lg p-3 ${
+                                        msg.sender === uid
+                                            ? 'bg-gray-900 text-white'
+                                            : 'bg-white border border-gray-200'
+                                    }`}
+                                >
+                                    <p className="whitespace-pre-wrap break-all">{msg.body}</p>
+                                    <span className="text-xs text-gray-400 mt-1 block">
+                                        {msg.sendTime.toLocaleString()}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="border-t border-gray-200 bg-white p-4">
+                        <div className="flex items-center space-x-4">
+                            <textarea
+                                value={message}
+                                rows={1}
+                                onChange={(e) => setMessage(e.target.value)}
+                                placeholder="Type a message..."
+                                className="flex-1 rounded-lg border-gray-300 focus:ring-gray-500 focus:border-gray-500 p-2 min-h-fit resize-none max-h-[50%]"
+                                onInput={(e) => {
+                                    const field = e.target as HTMLInputElement;
+                                    field.style.height = "auto";
+                                    field.style.height = `${Math.min(field.scrollHeight, window.innerHeight * 0.5)}px`;
+                                }}
+                            />
+                            <button
+                                onClick={handleSend}
+                                disabled={!message.trim() || sending}
+                                className="p-2 w-10 h-10 justify-items-center rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-75 disabled:cursor-not-allowed"
+                            >
+                                {sending ?
+                                    <Loading scale={0.25} color="#fff" message=""/> :
+                                    <Send className="w-5 h-5"/>
+                                }
+                            </button>
+                        </div>
+                    </div>
+                </>
+            }
         </div>
     );
 };
