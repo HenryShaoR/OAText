@@ -1,22 +1,25 @@
-import { useState } from 'react';
+import {Dispatch, SetStateAction, useState} from 'react';
 import { X, Users, Trash } from '../../asserts/icons.tsx';
 import ImageUpload from '../post/ImageUpload';
 import {Link} from "react-router-dom";
 import {readCookies} from "../../utils/cookies.ts";
 import EditMembers from './EditMembers';
+import {Loading} from "../../asserts/loading.tsx";
 
 interface ChatSettingsProps {
     chat: any;
     onClose: () => void;
-    onUpdate: (updatedChat: any) => void;
-    onDelete: () => void;
+    onUpdate: (updatedChat: any, setSaving: Dispatch<SetStateAction<boolean>>) => void;
+    onDelete: (deletingChat: any, setDeleting: Dispatch<SetStateAction<boolean>>) => void;
 }
 
 const ChatSettings = ({ chat, onClose, onUpdate, onDelete }: ChatSettingsProps) => {
-    const [groupName, setGroupName] = useState(chat.groupName || '');
-    const [avatar, setAvatar] = useState(chat.avatar || '');
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-    const [showEditMemberModal, setShowEditMemberModal] = useState(false);
+    const [groupName, setGroupName] = useState<string>(chat.groupName || '');
+    const [avatar, setAvatar] = useState<string>(chat.avatar || '');
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
+    const [showEditMemberModal, setShowEditMemberModal] = useState<boolean>(false);
+    const [saving, setSaving] = useState<boolean>(false);
+    const [deleting, setDeleting] = useState<boolean>(false);
 
     const cookies = readCookies();
     const id = cookies.id;
@@ -26,11 +29,11 @@ const ChatSettings = ({ chat, onClose, onUpdate, onDelete }: ChatSettingsProps) 
             ...chat,
             groupName: groupName,
             avatar,
-        });
+        }, setSaving);
     };
 
-    const handleAddMembers = (newMembers: any[]) => {
-        chat.members = [...chat.members, ...newMembers];
+    const handleEditMembers = (newMembers: any[]) => {
+        chat.members = newMembers;
     };
 
     return (
@@ -132,16 +135,24 @@ const ChatSettings = ({ chat, onClose, onUpdate, onDelete }: ChatSettingsProps) 
                         onClick={() => setShowDeleteConfirm(true)}
                         className="flex items-center space-x-2 text-red-600 hover:text-red-700 w-full justify-center py-2 px-4 border border-red-600 rounded-lg hover:bg-red-50"
                     >
-                        <Trash className="w-5 h-5"/>
-                        <span>Delete Chat</span>
+                        { deleting?
+                            <Loading scale={0.2} color="#f00" message="Deleting" />:
+                            <>
+                                <Trash className="w-5 h-5"/>
+                                <span>Delete Chat</span>
+                            </>
+                        }
                     </button>
 
                     <button
                         onClick={handleUpdateSettings}
-                        disabled={!groupName.trim() || !avatar || chat.members.length < 2}
-                        className="w-full px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!groupName.trim() || !avatar || chat.members.length < 2 || saving}
+                        className="w-full px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed justify-items-center"
                     >
-                        Save Changes
+                        { saving?
+                            <Loading scale={0.2} color="#fff" message="Saving" />:
+                            <span>Save Changes</span>
+                        }
                     </button>
                 </div>
             </div>
@@ -155,14 +166,19 @@ const ChatSettings = ({ chat, onClose, onUpdate, onDelete }: ChatSettingsProps) 
                         </p>
                         <div className="flex space-x-4">
                             <button
-                                onClick={onDelete}
-                                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                                onClick={() => onDelete(chat, setDeleting)}
+                                disabled={deleting}
+                                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed justify-items-center"
                             >
-                                Delete
+                                { deleting?
+                                    <Loading scale={0.2} color="#fff" message="Deleting" />:
+                                    <span>Delete</span>
+                                }
                             </button>
                             <button
                                 onClick={() => setShowDeleteConfirm(false)}
-                                className="flex-1 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
+                                disabled={deleting}
+                                className="flex-1 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Cancel
                             </button>
@@ -170,11 +186,13 @@ const ChatSettings = ({ chat, onClose, onUpdate, onDelete }: ChatSettingsProps) 
                     </div>
                 </div>
             )}
-            <EditMembers
-                isOpen={showEditMemberModal}
-                onClose={() => setShowEditMemberModal(false)}
-                onAddMembers={handleAddMembers}
-            />
+            { showEditMemberModal &&
+                <EditMembers
+                    initialMembers={chat.members}
+                    onClose={() => setShowEditMemberModal(false)}
+                    onEditMember={handleEditMembers}
+                />
+            }
         </div>
     );
 };

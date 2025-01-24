@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import {Dispatch, SetStateAction, useEffect, useRef, useState} from 'react';
 import {Info, Send, Settings} from '../../asserts/icons';
 import {server} from "../../utils/address.ts";
 import {popup} from "../../utils/popup.ts";
@@ -6,13 +6,27 @@ import {readCookies} from "../../utils/cookies.ts";
 import {Loading} from "../../asserts/loading.tsx";
 import ChatSettings from "./ChatSettings.tsx";
 
+const Action = {
+    "Send": 0,
+    "Update": 1,
+    "Delete": 2,
+}
 
-const ChatWindow = ({ chat }: { chat: any }) => {
-    const [message, setMessage] = useState<string>('');
+const ChatWindow = ({ chat, refreshList }: { chat: any; refreshList: (updatedChat: any, action: number) => void; }) => {
     const cookies = readCookies();
     const uid = cookies.id;
+    const [message, setMessage] = useState<string>('');
     const [sending, setSending] = useState<boolean>(false);
     const [showSettings, setShowSettings] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [chat.messages]);
 
     const handleSend = async () => {
         if (message.trim()) {
@@ -43,7 +57,10 @@ const ChatWindow = ({ chat }: { chat: any }) => {
                     };
                     chat.messages.push(message);
                     chat.lastMessage = message;
+                    refreshList(chat, Action.Send);
+                    setTimeout(() => scrollToBottom(), 100);
                     setMessage('');
+                    document.getElementsByTagName('textarea')[0].style.height = "auto";
                 } else {
                     popup(result.error);
                 }
@@ -56,10 +73,10 @@ const ChatWindow = ({ chat }: { chat: any }) => {
         }
     };
 
-    const handleUpdateChat = async (updatedChat: any) => {
-        console.log('Updating chat:', updatedChat);
+    const handleUpdateChat = async (updatedChat: any, setSaving: Dispatch<SetStateAction<boolean>>) => {
+        setSaving(true);
         try {
-            const response = await fetch(`${server}/v2/chat/update/${chat.id}`, {
+            const response = await fetch(`${server}/v2/chat/update/${updatedChat.id}`, {
                 method: "POST",
                 headers: {
                     'Content-Type': 'application/json',
@@ -75,23 +92,49 @@ const ChatWindow = ({ chat }: { chat: any }) => {
             });
             const result = await response.json();
             if (response.ok) {
-
+                chat = updatedChat;
+                refreshList(chat, Action.Update);
             } else {
                 popup(result.error);
             }
         } catch (error) {
             console.error(error);
             popup("Fail to update Chat, Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.");
+        } finally {
+            setShowSettings(false);
+            setSaving(false);
         }
-        setShowSettings(false);
     };
 
-    const handleDeleteChat = () => {
+    const handleDeleteChat = async (updatedChat: any, setDeleting: Dispatch<SetStateAction<boolean>>) => {
         // Here you would typically delete the chat in your backend
-
-        console.log('Deleting chat:', chat.id);
-        setShowSettings(false);
+        setDeleting(true);
+        try {
+            const response = await fetch(`${server}/v2/chat/delete/${updatedChat.id}`, {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    requestFields: {},
+                    responseFields: [],
+                })
+            });
+            const result = await response.json();
+            if (response.ok) {
+                refreshList(chat, Action.Delete);
+            } else {
+                popup(result.error);
+            }
+        } catch (error) {
+            console.error(error);
+            popup("Fail to update Chat, Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.");
+        } finally {
+            setShowSettings(false);
+            setDeleting(false);
+        }
     };
+
     return (
         <div className="h-full flex flex-col">
             {showSettings ?
@@ -152,6 +195,7 @@ const ChatWindow = ({ chat }: { chat: any }) => {
                                 </div>
                             </div>
                         ))}
+                        <div ref={messagesEndRef}/>
                     </div>
                     <div className="border-t border-gray-200 bg-white p-4">
                         <div className="flex items-center space-x-4">
@@ -172,7 +216,7 @@ const ChatWindow = ({ chat }: { chat: any }) => {
                                 disabled={!message.trim() || sending}
                                 className="p-2 w-10 h-10 justify-items-center rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-75 disabled:cursor-not-allowed"
                             >
-                                {sending ?
+                                { sending ?
                                     <Loading scale={0.25} color="#fff" message=""/> :
                                     <Send className="w-5 h-5"/>
                                 }

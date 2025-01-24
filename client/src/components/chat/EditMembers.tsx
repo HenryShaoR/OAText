@@ -2,102 +2,138 @@ import { useState } from 'react';
 import Modal from './Modal';
 import {server} from "../../utils/address.ts";
 import {popup} from "../../utils/popup.ts";
+import {Search, X} from "../../asserts/icons.tsx";
+import {Loading} from "../../asserts/loading.tsx";
 interface Member {
-    id: string;
+    id: number;
     username: string;
     email: string;
     avatar: string;
 }
 interface EditMembersProps {
-    isOpen: boolean;
+    initialMembers: any[];
     onClose: () => void;
-    onAddMembers: (members: Member[]) => void;
+    onEditMember: (members: Member[]) => void;
 }
 
-/**
- * @TODO
- * 1. Load users from setting page
- * 2. Remove button
- * 3. Scroll
- * 4. Prevent duplicated users
- */
+const EditMembers = ({ initialMembers, onClose, onEditMember }: EditMembersProps) => {
+    const [searchTerm, setSearchTerm] = useState<string>('');
+    const [searching, setSearching] = useState<boolean>(false);
 
-const EditMembers = ({ isOpen, onClose, onAddMembers }: EditMembersProps) => {
-    const [searchId, setSearchId] = useState('');
-    const [tempMembers, setTempMembers] = useState<Member[]>([]);
+    const [tempMembers, setTempMembers] = useState<Member[]>(initialMembers.map((member): Member => {return {
+        id: member.id,
+        username: member.username,
+        email: member.email,
+        avatar: member.avatar,
+    };}));
+
     const handleSearchMember = async () => {
-        if (searchId.trim() === '') return;
-        let user: any = { id: searchId };
+        if (searchTerm === '') return;
+        setSearching(true);
         try {
-            const response = await fetch(`${server}/v2/user/get/${searchId}`, {
+            const response = await fetch(`${server}/v2/search/user/-1`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    requestFields: {},
-                    responseFields: ["username", "avatar"],
+                    requestFields: {
+                        value: searchTerm,
+                        fields: ["username", "email", "id"],
+                    },
+                    responseFields: ["id", "username", "avatar", "email"],
                 })
             });
             const result = await response.json();
+
+            if (tempMembers.map((member) => member.id).includes(result.id)) return popup("The user is already in the list");
+
             if (response.ok) {
-                user.username = result.username;
-                user.avatar = result.avatar;
-                setTempMembers([...tempMembers, user]);
-                setSearchId('');
+                console.log(result);
+                setTempMembers([...tempMembers, {
+                    id: result.id,
+                    username: result.username,
+                    avatar: result.avatar,
+                    email: result.email,
+                }]);
+                setSearchTerm('');
             } else {
                 popup(result.error);
             }
         } catch (error) {
             console.error(error);
-            popup("Fail to search. Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.");
+            popup("User Not Found. Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.");
+        } finally {
+            setSearching(false);
         }
     };
+
+    const handleRemoveMember = async (id: number) => {
+        const newList = tempMembers.filter((member) => member.id !== id);
+        setTempMembers(newList);
+    }
+
     const handleSave = () => {
-        onAddMembers(tempMembers);
+        onEditMember(tempMembers);
         setTempMembers([]);
         onClose();
     };
     return (
-        <Modal title="Edit Members" isOpen={isOpen} onClose={onClose}>
+        <Modal title="Edit Members" onClose={onClose}>
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Search by ID
+                    Search by Username/Email/ID
                 </label>
                 <div className="flex space-x-2">
                     <input
-                        type="number"
-                        value={searchId}
-                        onChange={(e) => setSearchId(e.target.value)}
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                         className="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 px-2 py-1"
-                        placeholder="Enter member ID"
+                        placeholder="Username/Email/ID"
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                handleSearchMember().then();
+                            }
+                        }}
                     />
                     <button
                         onClick={handleSearchMember}
-                        className="px-4 py-1 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+                        disabled={searching}
+                        className="px-4 py-1 bg-gray-900 text-white rounded-lg hover:bg-gray-800 w-fit disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                        Search
+                        { searching?
+                            <Loading message="" scale={0.2} color="#fff"/>:
+                            <Search className="w-5 h-5"/>
+                        }
                     </button>
                 </div>
             </div>
-            <div className="mt-4">
-                <h4 className="text-md font-medium mb-2">Temporary Members</h4>
+            <div className="mt-4 max-h-64 overflow-y-auto space-y-4">
                 {tempMembers.length > 0 ? (
                     <ul className="space-y-2">
                         {tempMembers.map((member) => (
                             <li
                                 key={member.id}
-                                className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg"
+                                className="flex p-3 bg-gray-50 rounded-lg hover:bg-gray-100"
                             >
-                                <img
-                                    src={member.avatar}
-                                    alt={member.username}
-                                    className="w-8 h-8 rounded-full"
-                                />
-                                <div>
-                                    <p className="font-medium">{member.username}</p>
-                                    <p className="text-sm text-gray-500">{member.email}</p>
+                                <div className="flex items-center space-x-3 w-full">
+                                    <img
+                                        src={member.avatar}
+                                        alt={member.username}
+                                        className="w-8 h-8 rounded-full"
+                                    />
+                                    <div>
+                                        <p className="font-medium">{member.username}</p>
+                                        <p className="text-sm text-gray-500">{member.email}</p>
+                                    </div>
                                 </div>
+                                <button
+                                    className="m-3 hover:bg-gray-200 rounded-full"
+                                    onClick={() => handleRemoveMember(member.id)}
+                                >
+                                    <X className="text-red-500 w-6 h-6 m-1"/>
+                                </button>
                             </li>
                         ))}
                     </ul>

@@ -82,14 +82,8 @@ const ForgotPasswordPage = () => {
                     >
                         {
                             isLoading ?
-                                <div className="flex flex-row items-center space-x-2">
-                                    <Loading message="" scale={0.2} color="#fff"/>
-                                    <p className="text-nowrap">Sending...</p>
-                                </div>
-                                :
-                                <div>
-                                    <p className="text-nowrap">Send reset link</p>
-                                </div>
+                                <Loading message="Sending..." scale={0.2} color="#fff"/>:
+                                <p className="text-nowrap">Send reset link</p>
                         }
                     </button>
                 </div>

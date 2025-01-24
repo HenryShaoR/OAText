@@ -22,11 +22,7 @@ const ChatList = ({ chats, activeChat, onSelectChat, newChat, isCreatingChat}: C
             >
                 {
                     isCreatingChat ?
-                        <div className="flex flex-row items-center space-x-2">
-                            <Loading message="" scale={0.3} color="#444" />
-                            <p className="text-nowrap">Creating New Chat</p>
-                        </div>
-                        :
+                        <Loading message="Creating New Chat" scale={0.3} color="#444" />:
                         <div className="flex flex-row items-center space-x-2">
                             <Plus className="w-8 h-8 rounded-full object-cover" />
                             <p className="text-nowrap">New Chat</p>

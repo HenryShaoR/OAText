@@ -5,10 +5,11 @@
  * @param scale the scale of the loading icon
  * @param color the color of the dots
  * @param n the number of dots
+ * @param vertical orientation of icon and message
  */
-export function Loading ({ message = "Loading...", scale = 1.0, color = "#000",  n = 12 }: { message?: string; scale?: number; color?: string; n?: number}) {
+export function Loading ({ message = "Loading...", scale = 1.0, color = "#000",  n = 12, vertical = false }: { message?: string; scale?: number; color?: string; n?: number; vertical?: boolean;}) {
     return (
-        <div className="flex items-center justify-center w-full h-full flex-col">
+        <div className={"flex items-center w-fit h-fit" + (vertical && " flex-col")}>
             <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox={`0 0 ${100*scale} ${100*scale}`}
@@ -41,7 +42,7 @@ export function Loading ({ message = "Loading...", scale = 1.0, color = "#000", 
                     );
                 })}
             </svg>
-            { message? <h1>{message}</h1> : null }
+            { message? <h1 className="ml-2">{message}</h1> : null }
         </div>
     );
 }

@@ -298,7 +298,11 @@ const SettingsPage: React.FC = () => {
     };
 
     if (loading) {
-        return <Loading/>;
+        return (
+            <div className="flex w-full h-full justify-center items-center">
+                <Loading vertical={true} />
+            </div>
+        );
     }
 
     return (
@@ -311,11 +315,7 @@ const SettingsPage: React.FC = () => {
                 >
                     {
                         updating ?
-                            <div className="flex flex-row items-center space-x-2">
-                                <Loading message="" scale={0.2} color="#fff"/>
-                                <p className="text-nowrap">Saving</p>
-                            </div>
-                            :
+                            <Loading message="Saving" scale={0.2} color="#fff"/>:
                             <div className="flex flex-row items-center space-x-2">
                                 <Save className="w-5 h-5"/>
                                 <p className="text-nowrap">Save Changes</p>
@@ -481,15 +481,9 @@ const SettingsPage: React.FC = () => {
                             className="w-full px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 justify-items-center disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={verifying}
                         >
-                            {verifying ?
-                                <div className="flex flex-row space-x-2 w-fit">
-                                <Loading message="" scale={0.2} color="#fff"/>
-                                    <p className="text-nowrap">Verifying...</p>
-                                </div>
-                                :
-                                <div>
-                                    <p className="text-nowrap">Verify Password</p>
-                                </div>
+                            { verifying ?
+                                <Loading message="Verifying..." scale={0.2} color="#fff"/>:
+                                <p className="text-nowrap">Verify Password</p>
                             }
                         </button>
                     </form>
@@ -567,14 +561,8 @@ const SettingsPage: React.FC = () => {
                                         disabled={updatingPassword}
                                     >
                                         {updatingPassword ?
-                                            <div className="flex flex-row space-x-2 w-fit">
-                                                <Loading message="" scale={0.2} color="#fff"/>
-                                                <p className="text-nowrap">Updating Your Password...</p>
-                                            </div>
-                                            :
-                                            <div>
-                                                <p className="text-nowrap">Update Password</p>
-                                            </div>
+                                            <Loading message="Updating Your Password..." scale={0.2} color="#fff"/>:
+                                            <p className="text-nowrap">Update Password</p>
                                         }
                                     </button>
                                 </form>
@@ -623,14 +611,8 @@ const SettingsPage: React.FC = () => {
                                         }`}
                                     >
                                         { deleting ?
-                                            <div className="flex flex-row space-x-2 w-fit">
-                                                <Loading message="" scale={0.2} color="#fff"/>
-                                                <p className="text-nowrap">Deleting...</p>
-                                            </div>
-                                            :
-                                            <div>
-                                                <p className="text-nowrap">Delete My Account</p>
-                                            </div>
+                                            <Loading message="Deleting..." scale={0.2} color="#fff"/>:
+                                            <p className="text-nowrap">Delete My Account</p>
                                         }
                                     </button>
                                 </div>

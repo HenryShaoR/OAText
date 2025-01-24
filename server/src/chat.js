@@ -8,13 +8,13 @@ import {
 } from "./data.js";
 import {Target} from "./const.js";
 
-export async function addMember(uid, chatId) {
+async function addMember(uid, chatId) {
     const user = await getDataById(Target.user, uid);
     user.activeChats.push(chatId);
     await updateData(user);
 }
 
-export async function removeMember(uid, chatId) {
+async function removeMember(uid, chatId) {
     const user = await getDataById(Target.user, uid);
     user.activeChats = user.activeChats.filter(chat => chat !== chatId);
     await updateData(user);
@@ -39,7 +39,6 @@ export async function createChat(uid, groupName, avatar) {
 
 export async function sendMessage(chatId, author, message) {
     let chat = await getDataById(Target.chat, chatId);
-    console.log(chat.members);
     if (chat.members.includes(author)) {
         const messageObj = newMessage(
             await newId(Target.message),
@@ -54,26 +53,30 @@ export async function sendMessage(chatId, author, message) {
     throw new Error(`uid ${author} should not be in this chat`);
 }
 
-export async function updateChat(chatId, userId, members, groupName, avatar) {
+export async function updateChat(chatId, members, groupName, avatar) {
     let chat = await getDataById(Target.chat, chatId);
     await updateChatMember(chat.members, members, chatId);
-    if (!chat.members.includes(userId)) {
-        chat.members = members;
-        chat.groupName = groupName;
-        chat.avatar = avatar;
-        await updateData(chat);
-        return chat;
-    }
-    throw new Error(`Invite failed as user is not part of group`);
+    chat.members = members;
+    chat.groupName = groupName;
+    chat.avatar = avatar;
+    await updateData(chat);
+    return chat;
 }
 
-export async function updateChatMember(original, updated, chatId) {
-    console.log(original)
-    console.log(updated)
+async function updateChatMember(original, updated, chatId) {
     let onlyOriginal = original.filter((e) => !updated.includes(e));
     let onlyUpdated = updated.filter((e) => !original.includes(e));
     const updatePromises = [];
     onlyOriginal.map((id) => updatePromises.push(removeMember(id, chatId)));
     onlyUpdated.map((id) => updatePromises.push(addMember(id, chatId)));
     await Promise.all(updatePromises);
+}
+
+export async function deleteChat(chatId) {
+    let chat = await getDataById(Target.chat, chatId);
+    const updatePromises = [];
+    chat.members.map((id) => updatePromises.push(removeMember(id, chatId)));
+    chat.groupName = "##Deleted Chat##"
+    await Promise.all([Promise.all(updatePromises), updateData(chat)]);
+    return {}
 }

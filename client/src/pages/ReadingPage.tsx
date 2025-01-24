@@ -155,7 +155,12 @@ const ReadingPage = () => {
 
     if (loadingUser || loadingArticle) {
         console.time("Loading...");
-        return <Loading/>
+
+        return (
+            <div className="flex w-full h-full justify-center items-center">
+                <Loading vertical={true} />
+            </div>
+        );
     }
     console.timeEnd("Loading...");
     return (

@@ -22,10 +22,10 @@ import {
 
 import cors from "cors";
 import {sendCode, verifyCode} from "./email.js";
-import {getDataById, getPartialData, search} from "./data.js";
+import {getDataById, getPartialData, search, searchLegacy} from "./data.js";
 import {Target} from "./const.js";
 import bodyParser from "body-parser";
-import {createChat, sendMessage, updateChat} from "./chat.js";
+import {createChat, deleteChat, sendMessage, updateChat} from "./chat.js";
 
 export const app = express();
 
@@ -84,6 +84,8 @@ app.post('/v2/:type/:action/:id', async (req, res) => {
                     switch (action) {
                         case "get":
                             return requestFields.length > 0? await getPartialData(Target.user, id, responseFields) : await getDataById(Target.user, id);
+                        case "search":
+                            return search(Target.user, );
                         case "update":
                             return await userDetailUpdate(
                                 id,
@@ -111,7 +113,9 @@ app.post('/v2/:type/:action/:id', async (req, res) => {
                         case "new":
                             return await createChat(requestFields.members.map(Number), requestFields.groupName, requestFields.avatar);
                         case "update":
-                            return await updateChat(id, requestFields.id, requestFields.members.map(Number), requestFields.groupName, requestFields.avatar);
+                            return await updateChat(id, requestFields.members.map(Number), requestFields.groupName, requestFields.avatar);
+                        case "delete":
+                            return await deleteChat(id);
                         case "messageGet":
                             return requestFields.length > 0? await getPartialData(Target.message, id, responseFields) : await getDataById(Target.message, id);
                         case "messageSend":
@@ -144,7 +148,11 @@ app.post('/v2/:type/:action/:id', async (req, res) => {
                 case "search":
                     switch (action) {
                         case "search":
-                            return await search(requestFields.searchTerm);
+                            return await searchLegacy(requestFields.searchTerm);
+                        case "user":
+                            return await search(Target.user, requestFields.value, requestFields.fields, responseFields);
+                        case "article":
+                            return await search(Target.article, requestFields.value, requestFields.fields, responseFields);
                         default:
                             NotFound = true;
                             throw new Error(`Invalid action "${action}" for search`);

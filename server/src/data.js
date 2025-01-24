@@ -264,13 +264,35 @@ export async function removeSession(user, sessionIndex) {
     await updateData(user);
 }
 
-export async function search(searchTerm) {
+export async function searchLegacy(searchTerm) {
     return await db.search(searchTerm).filter((e) => e.content.includes(searchTerm) | e.title.includes(searchTerm)).map(e => ({
         id: e.id,
         author: e.author,
         title: e.title,
         content: e.content,
         publishTime: e.publishTime}));
+}
+
+export async function search(type, value, targetFields, elements) {
+    let obj = {};
+    for (let field of targetFields) {
+        let query = {};
+        if (field === "id") {
+            try {
+                query[field] = parseInt(value);
+            } catch (ignored) {
+                query[field] = "";
+            }
+        } else {
+            query[field] = value;
+        }
+        const searchResult = await getData(type, query);
+        if (searchResult) {
+            elements.forEach(param => obj[param] = searchResult[param]);
+            return obj;
+        }
+    }
+    throw new Error(`No ${type} Matches the Search Inputs`)
 }
 
 export async function removeRecord(type, query) {

@@ -183,14 +183,8 @@ const LoginPage = () => {
                     >
                         {
                             isSubmitting ?
-                                <div className="flex flex-row items-center space-x-2">
-                                    <Loading message="" scale={0.2} color="#fff"/>
-                                    <p className="text-nowrap">Signing in</p>
-                                </div>
-                                :
-                                <div>
-                                    <p className="text-nowrap">Sign in</p>
-                                </div>
+                                <Loading message="Signing in" scale={0.2} color="#fff"/>:
+                                <p className="text-nowrap">Sign in</p>
                         }
                     </button>
                 </div>

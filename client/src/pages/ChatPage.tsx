@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import {Dispatch, SetStateAction, useEffect, useState} from 'react';
 import {Search, User, Users} from '../asserts/icons';
 import ChatList from '../components/chat/ChatList';
 import ChatWindow from '../components/chat/ChatWindow';
@@ -11,21 +11,23 @@ import NewChat from "../components/chat/NewChat.tsx";
 
 /**
  * @TODO
- * 1. Order all chats in the order of (lastMessage.sendTime || chat.createTime)
- * 2. Invite other user(s) to join the chat
- * 3. Sync the last message on the ChatList when a user sent a new message
- * 4. Monitoring new messages from other users
+ * 1. Order all chats in the order of (lastMessage.sendTime || chat.createTime)     OK
+ * 2. Invite other user(s) to join the chat                                         OK
+ * 3. Sync the last message on the ChatList when a user sent a new message          OK
+ * 4. Monitoring new messages from other users                                      Matthew
+ * 5. Delete chat function                                                          OK
  */
 
 const ChatPage = () => {
     document.title = 'Chat';
-    const [activeChat, setActiveChat] = useState<any | null>(null);
-    const [chatType, setChatType] = useState<'private' | 'group'>('private');
-
     const cookies = readCookies();
     const id = cookies.id;
     const navigate = useNavigate();
+
+    const [activeChat, setActiveChat] = useState<any | null>(null);
+    const [chatType, setChatType] = useState<'private' | 'group'>('private');
     const [chats, setChats] = useState<any[]>([]);
+    const [currentUser, setCurrentUser] = useState<any>();
     const [loading, setLoading] = useState<boolean>(true);
     const [loadingChat, setLoadingChat] = useState<boolean>(false);
     const [isCreatingChat, setIsCreatingChat] = useState<boolean>(false);
@@ -114,9 +116,8 @@ const ChatPage = () => {
         setLoadingChat(false);
     }
 
-    async function onCreate(chat: any) {
-        const members = [id];
-        // select and push other participants
+    async function onCreate(newChat: any, setCreating: Dispatch<SetStateAction<boolean>>) {
+        setCreating(true);
         try {
             const response = await fetch(`${server}/v2/chat/new/-1`, {
                 method: "POST",
@@ -125,9 +126,9 @@ const ChatPage = () => {
                 },
                 body: JSON.stringify({
                     requestFields: {
-                        groupName: chat.groupName,
-                        members: members,
-                        avatar: chat.avatar,
+                        groupName: newChat.groupName,
+                        members: newChat.members,
+                        avatar: newChat.avatar,
                     },
                     responseFields: [],
                 })
@@ -139,13 +140,14 @@ const ChatPage = () => {
                 const chat = {
                     id: result.id,
                     messages: result.messages,
-                    members: result.members,
+                    members: newChat.members,  // save time as no need fetch members' details again
                     groupName: result.groupName,
                     avatar: result.avatar,
                     lastMessage: null,
                 };
-
+                console.log(chat)
                 setChats(chats.concat(chat));
+                setChatType(chat.members.length > 2? "group" : "private");
                 await onSelect(chat);
                 setIsCreatingChat(false);
             } else {
@@ -154,10 +156,12 @@ const ChatPage = () => {
         } catch (error) {
             console.error(error);
             popup("Unable to Create a New Chat, Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.");
+        } finally {
+            setCreating(false);
         }
     }
 
-    const getChat = async (chatId: number) => {
+    async function getChat(chatId: number) {
         try {
             const response = await fetch(`${server}/v2/chat/get/${chatId}`, {
                 method: "POST",
@@ -179,6 +183,7 @@ const ChatPage = () => {
                     members: result.members,
                     groupName: result.groupName,
                     avatar: result.avatar,
+                    createTime: new Date(result.createTime),
 
                     lastMessage: result.messages.length > 0 ? await getMessages(result.messages[result.messages.length - 1]) : null,
                 };
@@ -189,6 +194,29 @@ const ChatPage = () => {
             console.error(error);
             popup("Unable to Fetch Chat List, Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.");
         }
+    }
+
+    function refreshList(updatedChat: any, action: number) {
+        const Action = {
+            "Send": 0,
+            "Update": 1,
+            "Delete": 2,
+        }
+
+        let updatedChats;
+        if (action === Action.Send) {
+            updatedChats = [updatedChat];
+            updatedChats = updatedChats.concat(chats.filter(chat => chat.id !== updatedChat.id));
+        } else if (action === Action.Update) {
+            updatedChats = chats.map(chat =>
+                chat.id === updatedChat.id ? updatedChat : chat
+            );
+        } else {
+            updatedChats = chats.filter(chat => chat.id !== updatedChat.id);
+            updatedChat = null;
+        }
+        setChats(updatedChats);
+        setActiveChat(updatedChat);
     }
 
     useEffect(() => {
@@ -202,7 +230,7 @@ const ChatPage = () => {
                     },
                     body: JSON.stringify({
                         requestFields: {},
-                        responseFields: ["activeChats"],
+                        responseFields: ["activeChats", "id", "avatar", "username", "email"],
                     })
                 });
 
@@ -211,6 +239,10 @@ const ChatPage = () => {
                 if (response.ok) {
                     return {
                         activeChats: result.activeChats,
+                        id: result.id,
+                        avatar: result.avatar,
+                        username: result.username,
+                        email: result.email,
                     };
                 }
                 popup(result.error);
@@ -225,11 +257,19 @@ const ChatPage = () => {
         const init = async () => {
             try {
                 const user = await getUser();
+                setCurrentUser(user);
                 let chatsPromise: any[] = [];
                 for (let chat of user.activeChats) {
                     chatsPromise.push(getChat(chat));
                 }
-                setChats(await Promise.all(chatsPromise));
+                setChats(
+                    (await Promise.all(chatsPromise)).sort(
+                        (b, a) =>
+                            (a.lastMessage || {sendTime: a.createTime}).sendTime
+                            -
+                            (b.lastMessage || {sendTime: b.createTime}).sendTime
+                    )
+                );
             } catch (ignore) {}  // already handled
         }
 
@@ -237,7 +277,11 @@ const ChatPage = () => {
     }, []);
 
     if (loading) {
-        return <Loading />;
+        return (
+            <div className="flex w-full h-full justify-center items-center">
+                <Loading vertical={true} />
+            </div>
+        );
     }
 
     return (
@@ -291,13 +335,19 @@ const ChatPage = () => {
 
             <div className="flex-1 bg-gray-50">
                 { isCreatingChat ?
-                    <NewChat onCreate={onCreate} onCancel={async () => setIsCreatingChat(false)} />
+                    <NewChat onCreate={onCreate} onCancel={async () => setIsCreatingChat(false)} currentUser={currentUser} />
                     :
                     activeChat ?
-                        <ChatWindow chat={activeChat} />
+                        <ChatWindow
+                            chat={activeChat}
+                            refreshList={refreshList}
+                        />
                         :
                         loadingChat ?
-                            <Loading /> :
+                            <div className="flex w-full h-full justify-center items-center">
+                                <Loading vertical={true}/>
+                            </div>
+                            :
                             <div className="h-full flex items-center justify-center text-gray-500">
                                 Select a conversation to start chatting
                             </div>

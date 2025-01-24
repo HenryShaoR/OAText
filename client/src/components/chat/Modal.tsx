@@ -2,13 +2,11 @@ import { ReactNode } from 'react';
 import { X } from '../../asserts/icons.tsx';
 interface ModalProps {
     title: string;
-    isOpen: boolean;
     onClose: () => void;
     children: ReactNode;
 }
 
-const Modal = ({ title, isOpen, onClose, children }: ModalProps) => {
-    if (!isOpen) return null;
+const Modal = ({ title, onClose, children }: ModalProps) => {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg p-6 max-w-md w-full">

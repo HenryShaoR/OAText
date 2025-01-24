@@ -102,11 +102,7 @@ const WritingPage = () => {
                 >
                     {
                         publishing ?
-                            <div className="flex flex-row items-center space-x-2">
-                                <Loading message="" scale={0.2} color="#fff"/>
-                                <p className="text-nowrap">Publishing</p>
-                            </div>
-                            :
+                            <Loading message="Publishing" scale={0.2} color="#fff"/>:
                             <div className="flex flex-row items-center space-x-2">
                                 <Save className="w-5 h-5"/>
                                 <p className="text-nowrap">Publish</p>

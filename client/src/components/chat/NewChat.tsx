@@ -1,37 +1,37 @@
-import { useState } from 'react';
+import {Dispatch, SetStateAction, useState} from 'react';
 import {X, Users} from '../../asserts/icons.tsx';
 import ImageUpload from '../post/ImageUpload';
 import EditMembers from './EditMembers';
+import {Link} from "react-router-dom";
+import {Loading} from "../../asserts/loading.tsx";
 
 interface ChatSettingsProps {
     onCancel: () => void;
-    onCreate: (newChat: any) => void;
+    onCreate: (newChat: any, setCreating: Dispatch<SetStateAction<boolean>>) => void;
+    currentUser: any;
 }
 
-const NewChat = ({ onCancel, onCreate }: ChatSettingsProps) => {
-    const [members, setMembers] = useState<any[]>([]);
-    const [groupName, setGroupName] = useState('');
-    const [avatar, setAvatar] = useState('');
-    const [showEditMemberModal, setShowEditMemberModal] = useState(false);
+const NewChat = ({ onCancel, onCreate, currentUser }: ChatSettingsProps) => {
+    const [members, setMembers] = useState<any[]>([currentUser]);
+    const [groupName, setGroupName] = useState<string>('');
+    const [avatar, setAvatar] = useState<string>('');
+    const [showEditMemberModal, setShowEditMemberModal] = useState<boolean>(false);
+    const [creating, setCreating] = useState<boolean>(false);
 
     const handleSubmit = () => {
         onCreate({
             members: members.map((obj) => obj.id),
             groupName: groupName,
             avatar: avatar,
-        });
+        }, setCreating);
     }
 
     const handleAddMembers = (newMembers: any[]) => {
-        setMembers((prevMembers) => {
-            const updatedMembers = [...prevMembers, ...newMembers];
-            console.log('Updated members:', updatedMembers);
-            return updatedMembers;
-        });
+        setMembers(newMembers);
     };
 
     return (
-        <div className="flex-1 bg-gray-50 h-full flex flex-col overflow-y-scroll">
+        <div className="flex-1 bg-gray-50 h-full flex flex-col">
             <div className="flex flex-row w-full border-b border-gray-200 bg-white py-4 px-8 h-16">
                 <h2 className="flex w-full items-center space-x-3 text-lg font-semibold">New Chat</h2>
                 <button
@@ -97,22 +97,23 @@ const NewChat = ({ onCancel, onCreate }: ChatSettingsProps) => {
 
                         <div className="space-y-3">
                             {members.map((member: any) => (
-                                <div
+                                <Link
+                                    to={`/profile/${member.id}`}
                                     key={member.id}
-                                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                                 >
-                                    <div className="flex items-center space-x-3">
+                                    <div
+                                        className="w-full rounded-lg bg-gray-50 hover:bg-gray-100 flex space-x-3 p-3 mt-3">
                                         <img
                                             src={member.avatar}
                                             alt={member.username}
                                             className="w-10 h-10 rounded-full"
                                         />
-                                        <div>
-                                            <p className="font-medium">{member.username}</p>
-                                            <p className="text-sm text-gray-500">{member.email}</p>
+                                        <div className="justify-items-start">
+                                            <p className="font-medium hover:text-blue-600 hover:font-semibold">{member.username}{member.id === currentUser.id && " (You)"}</p>
+                                            <p className="text-sm text-gray-500 hover:underline">{member.email}</p>
                                         </div>
                                     </div>
-                                </div>
+                                </Link>
                             ))}
                             {members.length < 2 && (
                                 <p className="mt-1 text-sm text-red-600">At least two members are required</p>
@@ -126,18 +127,23 @@ const NewChat = ({ onCancel, onCreate }: ChatSettingsProps) => {
                     className="mt-auto border-t border-gray-200 p-6 space-y-4 bg-white w-[80%] mx-auto flex-1 rounded-lg shadow-sm">
                     <button
                         onClick={handleSubmit}
-                        disabled={!groupName.trim() || !avatar || members.length < 2}
-                        className="w-full px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!groupName.trim() || !avatar || members.length < 2 || creating}
+                        className="w-full px-4 py-2 bg-gray-900 text-white rounded-lg items-center justify-items-center hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Create Chat
+                        {creating?
+                            <Loading scale={0.2} color="#fff" message="Creating" />:
+                            <span>Create Chat</span>
+                        }
                     </button>
                 </div>
             </div>
-            <EditMembers
-                isOpen={showEditMemberModal}
-                onClose={() => setShowEditMemberModal(false)}
-                onAddMembers={handleAddMembers}
-            />
+            { showEditMemberModal &&
+                <EditMembers
+                    initialMembers={members}
+                    onClose={() => setShowEditMemberModal(false)}
+                    onEditMember={handleAddMembers}
+                />
+            }
         </div>
     );
 };

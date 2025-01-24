@@ -115,7 +115,7 @@ const ImageUpload = ({ onUpload, defaultImage, className = '', prompt = true }: 
                         disabled={isUploading}
                     >
                         {isUploading ?
-                            <Loading color="#fff"/> :
+                            <Loading scale={0.5} message="" color="#888"/> :
                             <div className="flex-col justify-items-center">
                                 <Upload className="w-5 h-5 text-white" />
                                 <span className="text-white">Change</span>
@@ -135,7 +135,7 @@ const ImageUpload = ({ onUpload, defaultImage, className = '', prompt = true }: 
                     disabled={isUploading}
                 >
                     {isUploading ?
-                        <Loading scale={0.3}/> :
+                        <Loading scale={0.5} message="" color="#888"/> :
                         <>
                             <Upload className="w-8 h-8 text-gray-400" />
                             { prompt &&
