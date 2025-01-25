@@ -10,7 +10,11 @@ import {
     userSignIn,
     userSignOut,
     userDetailUpdate,
-    userDelete, follow, like, updatePassword, verifyPassword,
+    userDelete,
+    follow,
+    like,
+    updatePassword,
+    verifyPassword,
 } from "./user.js";
 
 import {
@@ -22,7 +26,7 @@ import {
 
 import cors from "cors";
 import {sendCode, verifyCode} from "./email.js";
-import {getDataById, getPartialData, search, searchLegacy} from "./data.js";
+import {getDataById, getPartialDataById, search, searchLegacy} from "./data.js";
 import {Target} from "./const.js";
 import bodyParser from "body-parser";
 import {createChat, deleteChat, sendMessage, updateChat} from "./chat.js";
@@ -46,7 +50,7 @@ app.post('/v2/:type/:action/:id', async (req, res) => {
                 case "article":
                     switch (action) {
                         case "get":
-                            return await requestFields.length > 0? await getPartialData(Target.article, id, responseFields) : await getDataById(Target.article, id);
+                            return await requestFields.length > 0? await getPartialDataById(Target.article, id, responseFields) : await getDataById(Target.article, id);
                         case "comment":
                             return await addComment(requestFields.id /* parent IDs */, requestFields.author, requestFields.content);
                         case "bookmark":
@@ -83,7 +87,7 @@ app.post('/v2/:type/:action/:id', async (req, res) => {
                 case "user":
                     switch (action) {
                         case "get":
-                            return requestFields.length > 0? await getPartialData(Target.user, id, responseFields) : await getDataById(Target.user, id);
+                            return requestFields.length > 0? await getPartialDataById(Target.user, id, responseFields) : await getDataById(Target.user, id);
                         case "search":
                             return search(Target.user, );
                         case "update":
@@ -109,7 +113,7 @@ app.post('/v2/:type/:action/:id', async (req, res) => {
                 case "chat":
                     switch (action) {
                         case "get":
-                            return requestFields.length > 0? await getPartialData(Target.chat, id, responseFields) : await getDataById(Target.chat, id);
+                            return requestFields.length > 0? await getPartialDataById(Target.chat, id, responseFields) : await getDataById(Target.chat, id);
                         case "new":
                             return await createChat(requestFields.members.map(Number), requestFields.groupName, requestFields.avatar);
                         case "update":
@@ -117,7 +121,7 @@ app.post('/v2/:type/:action/:id', async (req, res) => {
                         case "delete":
                             return await deleteChat(id);
                         case "messageGet":
-                            return requestFields.length > 0? await getPartialData(Target.message, id, responseFields) : await getDataById(Target.message, id);
+                            return requestFields.length > 0? await getPartialDataById(Target.message, id, responseFields) : await getDataById(Target.message, id);
                         case "messageSend":
                             return await sendMessage(id, parseInt(requestFields.id), requestFields.body);
                         default:

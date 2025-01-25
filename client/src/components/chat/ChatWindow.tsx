@@ -1,10 +1,11 @@
-import {Dispatch, SetStateAction, useEffect, useRef, useState} from 'react';
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import {Info, Send, Settings} from '../../asserts/icons';
 import {server} from "../../utils/address.ts";
 import {popup} from "../../utils/popup.ts";
 import {readCookies} from "../../utils/cookies.ts";
 import {Loading} from "../../asserts/loading.tsx";
 import ChatSettings from "./ChatSettings.tsx";
+import { useWebSocket } from '../../WebSocketContext.tsx';
 
 const Action = {
     "Send": 0,
@@ -27,6 +28,18 @@ const ChatWindow = ({ chat, refreshList }: { chat: any; refreshList: (updatedCha
     useEffect(() => {
         scrollToBottom();
     }, [chat.messages]);
+
+    const { lastMessage } = useWebSocket();
+    useEffect(() => {
+        if (lastMessage && lastMessage.id === chat.id && !chat.messages.map((message: any) => message.id).includes(lastMessage.message.id)) {
+            lastMessage.message.sendTime = new Date(lastMessage.message.sendTime);
+            console.log('ChatWindow:', lastMessage.message);
+            chat.messages.push(lastMessage.message);
+            chat.lastMessage = lastMessage.message;
+            refreshList(chat, Action.Send);
+            setTimeout(() => scrollToBottom(), 100);
+        }
+    }, [lastMessage]);
 
     const handleSend = async () => {
         if (message.trim()) {
@@ -58,7 +71,7 @@ const ChatWindow = ({ chat, refreshList }: { chat: any; refreshList: (updatedCha
                     chat.messages.push(message);
                     chat.lastMessage = message;
                     refreshList(chat, Action.Send);
-                    setTimeout(() => scrollToBottom(), 100);
+                    setTimeout(() => scrollToBottom(), 100);  // add time out to prevent scrolling from starting before the message bubble was created.
                     setMessage('');
                     document.getElementsByTagName('textarea')[0].style.height = "auto";
                 } else {
@@ -140,7 +153,7 @@ const ChatWindow = ({ chat, refreshList }: { chat: any; refreshList: (updatedCha
             {showSettings ?
                 <ChatSettings
                     chat={chat}
-                    onClose={() => setShowSettings(false)}
+                    onCancel={() => setShowSettings(false)}
                     onUpdate={handleUpdateChat}
                     onDelete={handleDeleteChat}
                 />

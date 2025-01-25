@@ -1,30 +1,48 @@
 import {Dispatch, SetStateAction, useState} from 'react';
-import { X, Users, Trash } from '../../asserts/icons.tsx';
+import {X, Users, Trash, Search} from '../../asserts/icons.tsx';
 import ImageUpload from '../post/ImageUpload';
 import {Link} from "react-router-dom";
 import {readCookies} from "../../utils/cookies.ts";
-import EditMembers from './EditMembers';
 import {Loading} from "../../asserts/loading.tsx";
+import {server} from "../../utils/address.ts";
+import {popup} from "../../utils/popup.ts";
 
 interface ChatSettingsProps {
     chat: any;
-    onClose: () => void;
+    onCancel: () => void;
     onUpdate: (updatedChat: any, setSaving: Dispatch<SetStateAction<boolean>>) => void;
     onDelete: (deletingChat: any, setDeleting: Dispatch<SetStateAction<boolean>>) => void;
 }
 
-const ChatSettings = ({ chat, onClose, onUpdate, onDelete }: ChatSettingsProps) => {
+const ChatSettings = ({ chat, onCancel, onUpdate, onDelete }: ChatSettingsProps) => {
+    const creating = chat.id === undefined;
+    const [tempMembers, setTempMembers] = useState<any[]>(chat.members.map((member: any) => {return {
+        id: member.id,
+        username: member.username,
+        email: member.email,
+        avatar: member.avatar,
+    };}));
+    const [membersList, setMembersList] = useState<any[]>(chat.members.map((member: any) => {return {
+        id: member.id,
+        username: member.username,
+        email: member.email,
+        avatar: member.avatar,
+    };}));
+
     const [groupName, setGroupName] = useState<string>(chat.groupName || '');
     const [avatar, setAvatar] = useState<string>(chat.avatar || '');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
-    const [showEditMemberModal, setShowEditMemberModal] = useState<boolean>(false);
-    const [saving, setSaving] = useState<boolean>(false);
+    const [isEditingMembers, setIsEditingMembers] = useState<boolean>(false);
     const [deleting, setDeleting] = useState<boolean>(false);
+    const [searchTerm, setSearchTerm] = useState<string>('');
+    const [searching, setSearching] = useState<boolean>(false);
+    const [saving, setSaving] = useState<boolean>(false);
 
     const cookies = readCookies();
-    const id = cookies.id;
+    const uid = cookies.id;
 
     const handleUpdateSettings = () => {
+        chat.members = membersList;
         onUpdate({
             ...chat,
             groupName: groupName,
@@ -32,16 +50,67 @@ const ChatSettings = ({ chat, onClose, onUpdate, onDelete }: ChatSettingsProps) 
         }, setSaving);
     };
 
-    const handleEditMembers = (newMembers: any[]) => {
-        chat.members = newMembers;
+    const handleSearchMember = async () => {
+        if (searchTerm === '') return;
+        setSearching(true);
+        try {
+            const response = await fetch(`${server}/v2/search/user/-1`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    requestFields: {
+                        value: searchTerm,
+                        fields: ["username", "email", "id"],
+                    },
+                    responseFields: ["id", "username", "avatar", "email"],
+                })
+            });
+            const result = await response.json();
+
+            if (tempMembers.map((member: any) => member.id).includes(result.id)) return popup("The user is already in the list");
+
+            if (response.ok) {
+                setTempMembers([...tempMembers, {
+                    id: result.id,
+                    username: result.username,
+                    avatar: result.avatar,
+                    email: result.email,
+                }]);
+                setSearchTerm('');
+            } else {
+                popup(result.error);
+            }
+        } catch (error) {
+            console.error(error);
+            popup("User Not Found. Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.");
+        } finally {
+            setSearching(false);
+        }
     };
+
+    const handleRemoveMember = async (id: number) => {
+        if (tempMembers.length === 3 && !creating) {
+            return popup("At Least 3 Members are Required for a Group Chat.");
+        }
+        if (tempMembers.length < 3 && !creating) {
+            return popup("At Least 2 Members are Required for a Private Chat.");
+        }
+        if (creating && id === uid) {
+            return popup("You Must be in the Chat When Creating One.")
+        }
+        setTempMembers(tempMembers.filter((member) => member.id !== id));
+    }
 
     return (
         <div className="flex-1 bg-gray-50 h-full flex flex-col">
             <div className="flex flex-row w-full border-b border-gray-200 bg-white py-4 px-8 h-16">
-                <h2 className="flex w-full items-center space-x-3 text-lg font-semibold">Chat Settings</h2>
+                <h2 className="flex w-full items-center space-x-3 text-lg font-semibold">{creating? "New Chat" : "Chat Settings"}</h2>
                 <button
-                    onClick={onClose}
+                    onClick={() => {
+                        onCancel();
+                    }}
                     className="p-2 hover:bg-gray-100 rounded-full flex flex-row items-center space-x-3"
                 >
                     <X className="w-5 h-5"/>
@@ -91,67 +160,133 @@ const ChatSettings = ({ chat, onClose, onUpdate, onDelete }: ChatSettingsProps) 
                     <div className="bg-white rounded-lg shadow-sm p-6 space-y-6">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-medium">Members</h3>
-                            <button
-                                onClick={() => setShowEditMemberModal(true)}
-                                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
-                                type="button"
-                            >
-                                <Users className="w-5 h-5"/>
-                                <span>Edit Members</span>
-                            </button>
-                        </div>
-
-                        <div className="space-y-3">
-                            {chat.members.map((member: any) => (
-                                <Link
-                                    to={`/profile/${member.id}`}
-                                    key={member.id}
+                            { isEditingMembers ?
+                                <button
+                                    onClick={() => setIsEditingMembers(false)}
+                                    className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
+                                    type="button"
                                 >
-                                    <div
-                                        className="w-full rounded-lg bg-gray-50 hover:bg-gray-100 flex space-x-3 p-3 mt-3">
+                                    <span className={"text-red-500"}>Discard Changes</span>
+                                    <X className="w-5 h-5 text-red-500"/>
+                                </button>
+                                :
+                                <button
+                                    onClick={() => {
+                                        setTempMembers(membersList);
+                                        setIsEditingMembers(true);
+                                    }}
+                                    className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
+                                    type="button"
+                                >
+                                    <Users className="w-5 h-5"/>
+                                    <span>Edit Members</span>
+                                </button>
+                            }
+                        </div>
+                        {isEditingMembers && (
+                            <div className="mt-4 p-4 border border-gray-200 rounded-lg">
+                                <h4 className="font-medium mb-3">Add New Member</h4>
+                                <div className="flex space-x-2">
+                                    <input
+                                        type="text"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 px-2 py-1"
+                                        placeholder="Username/Email/ID"
+                                    />
+                                    <button
+                                        onClick={handleSearchMember}
+                                        disabled={searching}
+                                        type="button"
+                                        className="px-4 py-1 bg-gray-900 text-white rounded-lg hover:bg-gray-800 w-fit disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        {searching ?
+                                            <Loading message="" scale={0.2} color="#fff"/> :
+                                            <Search className="w-5 h-5"/>
+                                        }
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        <div className="space-y-3">
+                            {(isEditingMembers ? tempMembers : membersList).map((member: any) => (
+                                <li
+                                    key={member.id}
+                                    className="flex p-3 bg-gray-50 rounded-lg hover:bg-gray-100"
+                                >
+                                    <Link
+                                        to={`/profile/${member.id}`}
+                                        target="_blank"  // open in new tab to prevent interrupting editing members
+                                        className="flex items-center space-x-3 w-full"
+                                    >
                                         <img
                                             src={member.avatar}
                                             alt={member.username}
-                                            className="w-10 h-10 rounded-full"
+                                            className="w-8 h-8 rounded-full"
                                         />
-                                        <div className="justify-items-start">
-                                            <p className="font-medium hover:text-blue-600 hover:font-semibold">{member.username}{member.id === id && " (You)"}</p>
+                                        <div>
+                                            <p className="font-medium hover:text-blue-600 hover:font-semibold">{member.username}{member.id === uid && " (You)"}</p>
                                             <p className="text-sm text-gray-500 hover:underline">{member.email}</p>
                                         </div>
-                                    </div>
-                                </Link>
+                                    </Link>
+                                    { isEditingMembers &&
+                                        <button
+                                            className="m-3 hover:bg-gray-200 rounded-full"
+                                            type="button"
+                                            onClick={() => handleRemoveMember(member.id)}
+                                        >
+                                            <X className="text-red-500 w-6 h-6 m-1"/>
+                                        </button>
+                                    }
+                                </li>
                             ))}
-                            {chat.members.length < 2 && (
+                            {(isEditingMembers? tempMembers:membersList).length < 2 && (
                                 <p className="mt-1 text-sm text-red-600">At least two members are required</p>
                             )}
                         </div>
+                        {isEditingMembers &&
+                            <button
+                                disabled={membersList.length < 2}
+                                className="w-full px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed justify-items-center"
+                                type="button"
+                                onClick={() => {
+                                    setMembersList(tempMembers);
+                                    setIsEditingMembers(false);
+                                }}
+                            >
+                                <span>Confirm</span>
+                            </button>
+                        }
                     </div>
                 </form>
             </div>
 
             <div className="px-4 py-2">
-                <div className="mt-auto border-t border-gray-200 p-6 space-y-4 bg-white w-[80%] mx-auto flex-1 rounded-lg shadow-sm">
-                    <button
-                        onClick={() => setShowDeleteConfirm(true)}
-                        className="flex items-center space-x-2 text-red-600 hover:text-red-700 w-full justify-center py-2 px-4 border border-red-600 rounded-lg hover:bg-red-50"
-                    >
-                        { deleting?
-                            <Loading scale={0.2} color="#f00" message="Deleting" />:
-                            <>
-                                <Trash className="w-5 h-5"/>
-                                <span>Delete Chat</span>
-                            </>
-                        }
-                    </button>
+                <div
+                    className="mt-auto border-t border-gray-200 p-6 space-y-4 bg-white w-[80%] mx-auto flex-1 rounded-lg shadow-sm">
+                    {!creating &&
+                        <button
+                            onClick={() => setShowDeleteConfirm(true)}
+                            className="flex items-center space-x-2 text-red-600 hover:text-red-700 w-full justify-center py-2 px-4 border border-red-600 rounded-lg hover:bg-red-50"
+                        >
+                            {deleting ?
+                                <Loading scale={0.2} color="#f00" message="Deleting"/> :
+                                <>
+                                    <Trash className="w-5 h-5"/>
+                                    <span>Delete Chat</span>
+                                </>
+                            }
+                        </button>
+                    }
 
                     <button
                         onClick={handleUpdateSettings}
-                        disabled={!groupName.trim() || !avatar || chat.members.length < 2 || saving}
+                        disabled={!groupName.trim() || !avatar || (isEditingMembers? tempMembers:membersList).length < 2 || saving}
                         className="w-full px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed justify-items-center"
                     >
                         { saving?
-                            <Loading scale={0.2} color="#fff" message="Saving" />:
-                            <span>Save Changes</span>
+                            <Loading scale={0.2} color="#fff" message={creating? "Creating" : "Saving"} />:
+                            <span>{creating? "Create Chat" : "Save Changes"}</span>
                         }
                     </button>
                 </div>
@@ -186,13 +321,6 @@ const ChatSettings = ({ chat, onClose, onUpdate, onDelete }: ChatSettingsProps) 
                     </div>
                 </div>
             )}
-            { showEditMemberModal &&
-                <EditMembers
-                    initialMembers={chat.members}
-                    onClose={() => setShowEditMemberModal(false)}
-                    onEditMember={handleEditMembers}
-                />
-            }
         </div>
     );
 };

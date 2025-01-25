@@ -183,9 +183,16 @@ export async function getData(target, query) {
  * @param {number} id the value of id
  * @param {string[]} elements the elements required
  */
-export async function getPartialData(target, id, elements) {
+export async function getPartialDataById(target, id, elements) {
     let obj = {};
-    const variable = await getDataById(target, id);
+    const variable = await db.get(target, {id: id});
+    elements.forEach(param => obj[param] = variable[param]);
+    return obj;
+}
+
+export async function getPartialData(target, query, elements) {
+    let obj = {};
+    const variable = await db.get(target, query);
     elements.forEach(param => obj[param] = variable[param]);
     return obj;
 }
@@ -274,14 +281,12 @@ export async function searchLegacy(searchTerm) {
 }
 
 export async function search(type, value, targetFields, elements) {
-    let obj = {};
-    for (let field of targetFields) {
-        let query = {};
+    const obj = {};
+    const searchPromises = targetFields.map(async (field) => {
+        const query = {};
         if (field === "id") {
-            try {
-                query[field] = parseInt(value);
-            } catch (ignored) {
-                query[field] = "";
+            if (isNaN(query[field] = parseInt(value))) {
+                return null;
             }
         } else {
             query[field] = value;
@@ -290,6 +295,11 @@ export async function search(type, value, targetFields, elements) {
         if (searchResult) {
             elements.forEach(param => obj[param] = searchResult[param]);
             return obj;
+        }
+    });
+    for (const result of await Promise.all(searchPromises)) {
+        if (result) {
+            return result;
         }
     }
     throw new Error(`No ${type} Matches the Search Inputs`)

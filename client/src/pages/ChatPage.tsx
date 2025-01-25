@@ -1,4 +1,4 @@
-import {Dispatch, SetStateAction, useEffect, useState} from 'react';
+import {ChangeEvent, Dispatch, SetStateAction, useEffect, useState} from 'react';
 import {Search, User, Users} from '../asserts/icons';
 import ChatList from '../components/chat/ChatList';
 import ChatWindow from '../components/chat/ChatWindow';
@@ -7,15 +7,20 @@ import {useNavigate} from "react-router-dom";
 import {server} from "../utils/address.ts";
 import {popup} from "../utils/popup.ts";
 import {Loading} from "../asserts/loading.tsx";
-import NewChat from "../components/chat/NewChat.tsx";
+import ChatSettings from "../components/chat/ChatSettings.tsx";
+import { useWebSocket } from '../WebSocketContext.tsx';
+
 
 /**
  * @TODO
  * 1. Order all chats in the order of (lastMessage.sendTime || chat.createTime)     OK
  * 2. Invite other user(s) to join the chat                                         OK
  * 3. Sync the last message on the ChatList when a user sent a new message          OK
- * 4. Monitoring new messages from other users                                      Matthew
+ * 4. Monitoring new messages from other users                                      OK
  * 5. Delete chat function                                                          OK
+ * 6. Number restriction and link in EditMembers                                    OK
+ * 7. Combine ChatSettings.tsx and NewChat.tsx                                      OK
+ * 8. Integrate EditMembers.tsx in ChatSettings.tsx
  */
 
 const ChatPage = () => {
@@ -31,6 +36,19 @@ const ChatPage = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [loadingChat, setLoadingChat] = useState<boolean>(false);
     const [isCreatingChat, setIsCreatingChat] = useState<boolean>(false);
+    const [searchQuery, setSearchQuery] = useState<string>(""); // State for search query
+
+    const { webSocketMessage, isConnected } = useWebSocket();
+
+    const filteredChats = chats.filter(
+        (chat) =>
+            (chat.members.length > 2) === (chatType === "group") &&
+            chat.groupName.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const handleSearchInput = (event: ChangeEvent<HTMLInputElement>) => {
+        setSearchQuery(event.target.value);
+    };
 
     async function getMessages(id: number) {
         try {
@@ -127,7 +145,7 @@ const ChatPage = () => {
                 body: JSON.stringify({
                     requestFields: {
                         groupName: newChat.groupName,
-                        members: newChat.members,
+                        members: newChat.members.map((member: any) => member.id),
                         avatar: newChat.avatar,
                     },
                     responseFields: [],
@@ -274,7 +292,15 @@ const ChatPage = () => {
         }
 
         init().then(() => { setLoading(false); });
-    }, []);
+
+        if (isConnected) {
+            // Send register message when WebSocket is connected
+            webSocketMessage({
+                type: 'register',
+                id: id,
+            });
+        }
+    }, [isConnected, id, webSocketMessage]);
 
     if (loading) {
         return (
@@ -318,13 +344,15 @@ const ChatPage = () => {
                         <input
                             type="text"
                             placeholder="Search conversations..."
+                            value={searchQuery}
+                            onChange={handleSearchInput}
                             className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-gray-500 focus:border-gray-500"
                         />
                         <Search className="w-5 h-5 text-gray-400 absolute left-3 top-2.5"/>
                     </div>
 
                     <ChatList
-                        chats={chats.filter((chat) => (chat.members.length > 2) === (chatType === 'group'))}
+                        chats={filteredChats}
                         activeChat={activeChat}
                         onSelectChat={onSelect}
                         newChat={() => setIsCreatingChat(true)}
@@ -335,7 +363,18 @@ const ChatPage = () => {
 
             <div className="flex-1 bg-gray-50">
                 { isCreatingChat ?
-                    <NewChat onCreate={onCreate} onCancel={async () => setIsCreatingChat(false)} currentUser={currentUser} />
+                    <ChatSettings
+                        chat={{
+                            id: undefined,
+                            groupName: undefined,
+                            members: [currentUser],
+                            messages: [],
+                            avatar: undefined,
+                        }}
+                        onCancel={async () => setIsCreatingChat(false)}
+                        onUpdate={onCreate}
+                        onDelete={() => {}}
+                    />
                     :
                     activeChat ?
                         <ChatWindow

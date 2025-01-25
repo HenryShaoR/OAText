@@ -7,6 +7,16 @@ import {
     addData
 } from "./data.js";
 import {Target} from "./const.js";
+import {clients} from "./index.js";
+
+
+export async function sendSocketMessage(chat, author, message) {
+    for (const [userId, connection] of clients.entries()) {
+        if (userId !== author && chat.members.includes(userId)) {
+            connection.send(JSON.stringify({ id: chat.id, message: message }));
+        }
+    }
+}
 
 async function addMember(uid, chatId) {
     const user = await getDataById(Target.user, uid);
@@ -45,9 +55,8 @@ export async function sendMessage(chatId, author, message) {
             author,
             new Date(),
             message);
-        await addData(messageObj);
         chat.messages.push(messageObj.id);
-        await updateData(chat);
+        await Promise.all([sendSocketMessage(chat, author, messageObj), addData(messageObj), updateData(chat)]);
         return messageObj;
     }
     throw new Error(`uid ${author} should not be in this chat`);

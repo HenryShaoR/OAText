@@ -20,6 +20,8 @@
   },
   "devDependencies": {
     "body-parser": "^2.0.2",
-    "mongodb": "^6.12.0"
+    "mongodb": "^6.12.0",
+    "ws": "^8.18.0",
+    "wscat": "^6.0.1"
   }
 }
