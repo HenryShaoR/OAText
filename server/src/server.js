@@ -62,10 +62,10 @@ app.post('/v2/:type/:action/:id', async (req, res) => {
                                 requestFields.title,
                                 requestFields.summary,
                                 requestFields.content,
-                                JSON.parse(requestFields.long),
+                                JSON.parse(requestFields.isSeries),
                                 parseFloat(requestFields.price),
                                 requestFields.tags,
-                                parseInt(requestFields.preId));
+                                parseInt(requestFields.indexId));
                         case "update":
                             return await articleUpdate(
                                 requestFields.session,
@@ -77,7 +77,7 @@ app.post('/v2/:type/:action/:id', async (req, res) => {
                                 parseFloat(requestFields.price),
                                 requestFields.tags,
                                 id,
-                                parseInt(requestFields.preId));
+                                parseInt(requestFields.indexId));
                         case "like":
                             return await like(id, requestFields.id);
                         default:

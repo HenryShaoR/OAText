@@ -54,25 +54,38 @@ async function getAuthorId(session) {  // to be replaced in future
  * @param {string} title - The new article's name
  * @param {string} summary - The new article's summary
  * @param {string} content - The new article's text content
- * @param {boolean} long - If this article is long
+ * @param {boolean} isSeries - If this article is the index of a series
  * @param {number} price
  * @param {string[]} tags
- * @param {number} previousArticleId - Previous chapter's article's id
+ * @param {number} indexId - the id of the series index
  * @returns return empty object if upload success
  */
-export async function articleUpload(session, cover, title, summary, content, long, price,
-    tags, previousArticleId) {
-
+export async function articleUpload(session, cover, title, summary, content, isSeries, price, tags, indexId) {
     validate(session, title, summary, content);
-
-    const [validPreArticleId, articleId, authorId] = await solve(isValidArticle(previousArticleId), newId(Target.article), getAuthorId(session));
+    const [articleId, authorId] = await solve(newId(Target.article), getAuthorId(session));
     const authorPromise = getDataById(Target.user, authorId);
     const date = new Date();
-
-    if (validPreArticleId) {
-        let previous = await getDataById(Target.article, previousArticleId);
-        previous.next = articleId;
-        await updateData(previous);
+    const readTime = calculateReadTime(content);
+    let seriesIndex = [];
+    let index;
+    if (indexId >= 0) {
+        index = await getDataById(Target.article, indexId);
+        seriesIndex = JSON.parse(index.content);
+        if (seriesIndex.length > 0) {
+            index.lastEdit = date;
+            const previous = await getDataById(Target.article, seriesIndex[seriesIndex.length - 1].id);
+            previous.next = {id: articleId, title: title};
+            seriesIndex.push({id: articleId, title: title});
+            index.content = JSON.stringify(seriesIndex);
+            index.readTime += readTime;
+            await solve(updateData(index), updateData(previous), updateData({...index, content: JSON.stringify(seriesIndex)}));
+        } else {
+            index.next = {id: articleId, title: title};
+            seriesIndex.push({id: articleId, title: title});
+            index.content = JSON.stringify(seriesIndex);
+            index.readTime += readTime;
+            await solve(updateData(index), updateData({...index, content: JSON.stringify(seriesIndex)}));
+        }
     }
 
     await addData(newArticle(
@@ -82,29 +95,33 @@ export async function articleUpload(session, cover, title, summary, content, lon
         title,
         summary,
         content,
-        long,
+        isSeries,
         date,
         date,
         [],
         [],
-        calculateReadTime(content),
+        readTime,
         [],
-        validPreArticleId? previousArticleId : -1,
+        seriesIndex.length > 1 ? seriesIndex[seriesIndex.length - 2] : (indexId < 0 ? -1 : {id: indexId, title: index.title}),
         -1,
+        indexId,
         price,
         tags,
     ));
-    const author = await authorPromise;
-    author.publications.push(articleId);
-    await updateData(author);
-    return {};
+    if (indexId === -1) {
+        // only add series and single posts into publications; chapters within a series is only shown in series index
+        const author = await authorPromise;
+        author.publications.push(articleId);
+        await updateData(author);
+    }
+    return {id: articleId};
 }
 
 /**
  * Add new article from user to database
  *
  * @param {Session} session - User's session used to add new article
- * @param {string} url - Cover image URL
+ * @param {string} cover - Cover image URL
  * @param {string} title - The new article's name
  * @param {string} summary - The new article's summary
  * @param {string} content - The new article's text content
@@ -114,7 +131,7 @@ export async function articleUpload(session, cover, title, summary, content, lon
  * @param {number} targetArticleId
  * @param {number} nextArticle - the id of the next article
  */
-export async function articleUpdate(session, url, title, summary, content, isSeries, price, tags, targetArticleId, nextArticle) {
+export async function articleUpdate(session, cover, title, summary, content, isSeries, price, tags, targetArticleId, nextArticle) {
     validate(session, title, summary, content);
 
     const [validNextArticle, article] = await solve(isValidArticle(nextArticle), getDataById(Target.article, targetArticleId));
@@ -126,7 +143,7 @@ export async function articleUpdate(session, url, title, summary, content, isSer
     await updateData(newArticle(
         targetArticleId,
         article.author,
-        article.cover,
+        cover,
         title,
         summary,
         content,
@@ -139,14 +156,11 @@ export async function articleUpdate(session, url, title, summary, content, isSer
         article.comments,
         article.previous,
         nextArticle,
+        article.indexId,
         price,
         tags
     ));
     return {};
-}
-
-export async function getArticleDetails(articleId) {
-    return await getDataById(Target.article, articleId);
 }
 
 /**

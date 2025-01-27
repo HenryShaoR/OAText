@@ -98,11 +98,12 @@ export async function newComment(id, author, body, replies, likes, dislikes, com
  * @param {Comment[]} comments
  * @param {number} previous
  * @param {number} next
+ * @param {number} indexId
  * @param {number} price
  * @param {string[]} tags
  */
 export function newArticle(id, author, cover, title, summary, content, isSeries, publishTime, lastEdit, likes, dislikes,
-                           readTime, comments, previous, next, price, tags) {
+                           readTime, comments, previous, next, indexId, price, tags) {
     return {
         _type: 'article',
         id: id,
@@ -120,6 +121,7 @@ export function newArticle(id, author, cover, title, summary, content, isSeries,
         comments: comments,
         previous: previous,
         next: next,
+        indexId: indexId,
         price: price,
         tags: tags,
     };
