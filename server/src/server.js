@@ -12,7 +12,6 @@ import {
     userDetailUpdate,
     userDelete,
     follow,
-    like,
     updatePassword,
     verifyPassword,
 } from "./user.js";
@@ -21,7 +20,8 @@ import {
     articleUpdate,
     articleUpload,
     addComment,
-    bookmark
+    bookmark,
+    like,
 } from "./article.js";
 
 import cors from "cors";
@@ -77,7 +77,7 @@ app.post('/v2/:type/:action/:id', async (req, res) => {
                                 parseFloat(requestFields.price),
                                 requestFields.tags,
                                 id,
-                                parseInt(requestFields.indexId));
+                                requestFields.next);
                         case "like":
                             return await like(id, requestFields.id);
                         default:
@@ -88,8 +88,6 @@ app.post('/v2/:type/:action/:id', async (req, res) => {
                     switch (action) {
                         case "get":
                             return requestFields.length > 0? await getPartialDataById(Target.user, id, responseFields) : await getDataById(Target.user, id);
-                        case "search":
-                            return search(Target.user, );
                         case "update":
                             return await userDetailUpdate(
                                 id,

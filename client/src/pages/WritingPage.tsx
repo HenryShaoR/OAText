@@ -44,6 +44,7 @@ const WritingPage = () => {
     const [seriesCover, setSeriesCover] = useState<string>("");
     const [seriesName, setSeriesName] = useState<string>("");
     const [seriesSummary, setSeriesSummary] = useState<string>("");
+    const [creatingSeries, setCreatingSeries] = useState<boolean>(false);
 
     useEffect(() => {
         const getArticle = async (articleId: number, user: any) => {
@@ -173,11 +174,11 @@ const WritingPage = () => {
             await uploadPost(data.cover, data.title, data.summary, data.content, -1);
         } else {
             if (series.id === undefined) {
-                console.log("No Series Selected");
+                popup("No Series Selected");
             } else {
                 let index;
                 if (series.id === null) {
-                    console.log("New Series Selected");
+                    setCreatingSeries(true);
                     try {
                         const response = await fetch(`${server}/v2/article/upload/-1`, {
                             method: "POST",
@@ -208,13 +209,14 @@ const WritingPage = () => {
                                 title: seriesName,
                                 summary: seriesSummary,
                             }
-                            console.log("New Series Created Successfully");
                         } else {
                             popup(result.error);
                         }
                     } catch (error) {
                         console.error(error);
                         popup("Unable to Create the New Series, Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.")
+                    } finally {
+                        setCreatingSeries(false);
                     }
                 } else {
                     index = series;
@@ -222,7 +224,6 @@ const WritingPage = () => {
                 await uploadPost(data.cover, data.title, data.summary, data.content, index.id);
             }
         }
-        popup("Upload Successfully");
         setPublishing(false);
     };
 
@@ -237,7 +238,7 @@ const WritingPage = () => {
                 >
                     {
                         publishing ?
-                            <Loading message="Publishing" scale={0.2} color="#fff"/> :
+                            <Loading message={creatingSeries? "Creating Series" : "Publishing"} scale={0.2} color="#fff"/> :
                             <div className="flex flex-row items-center space-x-2">
                                 <Save className="w-5 h-5"/>
                                 <p className="text-nowrap">Publish</p>

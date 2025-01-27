@@ -26,7 +26,7 @@ import {solve} from "./utils/asyncUtils.js";
  * @param {string} email - The new user's Email
  * @param {string} password - The new user's password
  * @param {string} username - The new user's username
- * @returns {Promise<number>} Return a unique ID for the new user
+ * @returns {{id: number}} Return a unique ID for the new user
  * if the registration is successful
  */
 export async function userSignup(email, password, username) {
@@ -74,7 +74,7 @@ export async function userSignup(email, password, username) {
         [],
         []
     ));
-    return id;
+    return {id: id};
 }
 
 /**
@@ -191,17 +191,6 @@ export async function follow(targetId, followerId) {
         target.followers.splice(target.followers.indexOf(followerId), 1);
     }
     await solve(updateData(target), updateData(follower));
-    return {};
-}
-
-export async function like(articleId, likerId) {
-    const article = await getDataById(Target.article, articleId);
-    if (article.likes.indexOf(likerId) === -1) {
-        article.likes.push(likerId);
-    } else {
-        article.likes.splice(article.likes.indexOf(likerId), 1);
-    }
-    await updateData(article);
     return {};
 }
 

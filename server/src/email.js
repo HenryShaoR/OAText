@@ -39,9 +39,9 @@ export async function verifyCode(email, code) {
     const record = await getData("verificationCode", {email: email, code: code});
     if (record) {
         if (record.expiration > Date.now()) {
-            return true;
+            return {verified: true};
         }
         await removeRecord("verificationCode", {email: email, code: code});
     }
-    return false;
+    return {verified: false};
 }

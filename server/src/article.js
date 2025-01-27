@@ -67,7 +67,7 @@ export async function articleUpload(session, cover, title, summary, content, isS
     const date = new Date();
     const readTime = calculateReadTime(content);
     let seriesIndex = [];
-    let index;
+    let index = {id: isSeries? articleId : indexId, title: isSeries? title : ""};
     if (indexId >= 0) {
         index = await getDataById(Target.article, indexId);
         seriesIndex = JSON.parse(index.content);
@@ -77,13 +77,13 @@ export async function articleUpload(session, cover, title, summary, content, isS
             previous.next = {id: articleId, title: title};
             seriesIndex.push({id: articleId, title: title});
             index.content = JSON.stringify(seriesIndex);
-            index.readTime += readTime;
+            index.readTime = Math.round((index.readTime + readTime)*10)/10;
             await solve(updateData(index), updateData(previous), updateData({...index, content: JSON.stringify(seriesIndex)}));
         } else {
             index.next = {id: articleId, title: title};
             seriesIndex.push({id: articleId, title: title});
             index.content = JSON.stringify(seriesIndex);
-            index.readTime += readTime;
+            index.readTime = Math.round((index.readTime + readTime)*10)/10;
             await solve(updateData(index), updateData({...index, content: JSON.stringify(seriesIndex)}));
         }
     }
@@ -102,9 +102,9 @@ export async function articleUpload(session, cover, title, summary, content, isS
         [],
         readTime,
         [],
-        seriesIndex.length > 1 ? seriesIndex[seriesIndex.length - 2] : (indexId < 0 ? -1 : {id: indexId, title: index.title}),
-        -1,
-        indexId,
+        seriesIndex.length > 1 ? seriesIndex[seriesIndex.length - 2] : (indexId < 0 ? {id: -1, title: ""} : {id: indexId, title: index.title}),
+        {id: -1, title: ""},
+        indexId > 0 || isSeries? index : -1,
         price,
         tags,
     ));
@@ -129,7 +129,7 @@ export async function articleUpload(session, cover, title, summary, content, isS
  * @param {number} price
  * @param {string[]} tags
  * @param {number} targetArticleId
- * @param {number} nextArticle - the id of the next article
+ * @param {{id: number, title: string,}} nextArticle - the id of the next article
  */
 export async function articleUpdate(session, cover, title, summary, content, isSeries, price, tags, targetArticleId, nextArticle) {
     validate(session, title, summary, content);
@@ -190,5 +190,16 @@ export async function bookmark(articleId, userId) {
         user.library.push(articleId);
     }
     await updateData(user);
+    return {};
+}
+
+export async function like(articleId, likerId) {
+    const article = await getDataById(Target.article, articleId);
+    if (article.likes.indexOf(likerId) === -1) {
+        article.likes.push(likerId);
+    } else {
+        article.likes.splice(article.likes.indexOf(likerId), 1);
+    }
+    await updateData(article);
     return {};
 }
