@@ -1,3 +1,10 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+    .proper-break-words {
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+}

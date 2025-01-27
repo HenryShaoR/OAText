@@ -7,6 +7,7 @@ interface ImageUploadProps {
     onUpload: (url: string) => void;
     defaultImage?: string;
     className?: string;
+    imgClassName? : string;
     prompt?: boolean;
 }
 
@@ -25,7 +26,7 @@ export const compressImage = async (file: File) => {
     }
 };
 
-const ImageUpload = ({ onUpload, defaultImage, className = '', prompt = true }: ImageUploadProps) => {
+const ImageUpload = ({ onUpload, defaultImage, className = '', imgClassName = "w-full h-full object-cover rounded-lg", prompt = true }: ImageUploadProps) => {
     const [isUploading, setIsUploading] = useState(false);
     const [previewUrl, setPreviewUrl] = useState(defaultImage);
     const [isDragging, setIsDragging] = useState(false);
@@ -106,12 +107,12 @@ const ImageUpload = ({ onUpload, defaultImage, className = '', prompt = true }: 
                     <img
                         src={previewUrl}
                         alt="Preview"
-                        className="w-full h-full object-cover rounded-lg"
+                        className={imgClassName}
                     />
                     <button
                         type="button"
                         onClick={handleButtonClick}
-                        className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg"
+                        className={"absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg"}
                         disabled={isUploading}
                     >
                         {isUploading ?
@@ -131,7 +132,7 @@ const ImageUpload = ({ onUpload, defaultImage, className = '', prompt = true }: 
                         isDragging
                             ? 'border-gray-400 bg-gray-50'
                             : 'border-gray-300 hover:border-gray-400'
-                    }`}
+                    } ${prompt && "min-h-[150px]"}`}
                     disabled={isUploading}
                 >
                     {isUploading ?

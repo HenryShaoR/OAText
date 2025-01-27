@@ -8,9 +8,9 @@ import ChatSettings from "./ChatSettings.tsx";
 import { useWebSocket } from '../../WebSocketContext.tsx';
 
 const Action = {
-    "Send": 0,
-    "Update": 1,
-    "Delete": 2,
+    Send: 0,
+    Update: 1,
+    Delete: 2,
 }
 
 const ChatWindow = ({ chat, refreshList }: { chat: any; refreshList: (updatedChat: any, action: number) => void; }) => {
@@ -31,13 +31,17 @@ const ChatWindow = ({ chat, refreshList }: { chat: any; refreshList: (updatedCha
 
     const { lastMessage } = useWebSocket();
     useEffect(() => {
-        if (lastMessage && lastMessage.id === chat.id && !chat.messages.map((message: any) => message.id).includes(lastMessage.message.id)) {
+        if (lastMessage && chat.messages.map((message: any) => message.id).includes(lastMessage.message.id)) {
+            return;  // duplicated message
+        }
+        if (lastMessage && lastMessage.id === chat.id) {
             lastMessage.message.sendTime = new Date(lastMessage.message.sendTime);
-            console.log('ChatWindow:', lastMessage.message);
             chat.messages.push(lastMessage.message);
             chat.lastMessage = lastMessage.message;
             refreshList(chat, Action.Send);
             setTimeout(() => scrollToBottom(), 100);
+        } else if (lastMessage) {
+            refreshList(chat, -1);
         }
     }, [lastMessage]);
 
@@ -164,7 +168,7 @@ const ChatWindow = ({ chat, refreshList }: { chat: any; refreshList: (updatedCha
                             <img
                                 src={chat.members.length > 2 ? chat.avatar : (chat.members[0].id !== uid? chat.members[0].avatar : (chat.members[1] || {}).avatar)}
                                 alt={chat.groupName}
-                                className="w-10 h-10 rounded-full object-cover"
+                                className="w-10 h-10 rounded-full object-cover min-w-10"
                             />
                             <div>
                                 <h2 className="font-medium">
@@ -187,27 +191,49 @@ const ChatWindow = ({ chat, refreshList }: { chat: any; refreshList: (updatedCha
                         </div>
                     </div>
                     <div className="flex-1 p-4 overflow-y-auto space-y-4">
-                        {chat.messages.map((msg: any) => (
-                            <div
-                                key={msg.id}
-                                className={`flex ${
-                                    msg.sender === uid ? 'justify-end' : 'justify-start'
-                                }`}
-                            >
+                        {chat.messages.map((msg: any) => {
+                            const sender = {username: "Ex-Member", avatar:""};
+                            for (const member of chat.members) {
+                                if (member.id === msg.sender) {
+                                    sender.username = member.username;
+                                    sender.avatar = member.avatar
+                                }
+                            }
+                            return (
                                 <div
-                                    className={`max-w-[70%] rounded-lg p-3 ${
-                                        msg.sender === uid
-                                            ? 'bg-gray-900 text-white'
-                                            : 'bg-white border border-gray-200'
-                                    }`}
+                                    key={msg.id}
+                                    className={`flex ${ msg.sender === uid ? 'justify-end' : 'justify-start'}`}
                                 >
-                                    <p className="whitespace-pre-wrap break-all">{msg.body}</p>
-                                    <span className="text-xs text-gray-400 mt-1 block">
-                                        {msg.sendTime.toLocaleString()}
-                                    </span>
+                                    <div className="flex max-w-[80%] items-center space-x-2">
+                                        {msg.sender !== uid &&
+                                            <img
+                                                src={sender.avatar}
+                                                alt={sender.username}
+                                                className="w-12 h-12 rounded-full object-cover min-w-12"
+                                            />
+                                        }
+                                        <div className={`rounded-lg p-3 ${
+                                            msg.sender === uid
+                                                ? 'bg-gray-900 text-white'
+                                                : 'bg-white border border-gray-200'
+                                        }`}>
+                                            {msg.sender !== uid && <p className="text-xs text-gray-600 border-b pb-0.5">{sender.username}</p>}
+                                            <p className="proper-break-words whitespace-pre-wrap pt-0.5">{msg.body}</p>
+                                            <span className={`flex text-xs text-gray-400 mt-1 ${msg.sender === uid ? 'justify-end' : 'justify-start'}`}>
+                                                {msg.sendTime.toLocaleString()}
+                                            </span>
+                                        </div>
+                                        {msg.sender === uid &&
+                                            <img
+                                                src={sender.avatar}
+                                                alt={sender.username}
+                                                className="w-12 h-12 rounded-full object-cover min-w-12"
+                                            />
+                                        }
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                         <div ref={messagesEndRef}/>
                     </div>
                     <div className="border-t border-gray-200 bg-white p-4">

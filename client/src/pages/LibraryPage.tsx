@@ -30,11 +30,7 @@ const LibraryPage = () => {
 
     useEffect(() => {
         const getAuthor = async (userId: number) => {
-            let author: any = {id: userId};
             try {
-                // const response = await fetch(`${server}/v1/user/${userId}`, {
-                //     method: 'GET'
-                // });
                 const response = await fetch(`${server}/v2/user/get/${userId}`, {
                     method: "POST",
                     headers: {
@@ -42,15 +38,20 @@ const LibraryPage = () => {
                     },
                     body: JSON.stringify({
                         requestFields: {},
-                        responseFields: ["username", "avatar"],
+                        responseFields: ["username", "avatar", "publications", "followers"],
                     })
                 });
 
                 const result = await response.json();
 
                 if (response.ok) {
-                    author.username = result.username;
-                    author.avatar = result.avatar;
+                    return {
+                        id: userId,
+                        username: result.username,
+                        avatar: result.avatar,
+                        publications: result.publications,
+                        followers: result.followers.length,
+                    }
                 } else {
                     navigate("/");
                     popup(result.error);
@@ -60,7 +61,7 @@ const LibraryPage = () => {
                 navigate("/");
                 popup("Unable to Fetch Author's Details, Please Try Again Later.\n\nIf the Error Persists, Please Contact Support.");
             }
-            return author;
+            return {};
         }
 
         const getArticle = async (indexInLibrary: number, articleId: number) => {
@@ -75,17 +76,17 @@ const LibraryPage = () => {
                     },
                     body: JSON.stringify({
                         requestFields: {},
-                        responseFields: ["title", "content", "author", "publishTime", "likes", "isSeries", "readTime", "cover"],
+                        responseFields: ["title", "summary", "content", "author", "publishTime", "likes", "isSeries", "readTime", "cover"],
                     })
                 });
 
                 const result = await response.json();
 
                 if (response.ok) {
-
                     library[indexInLibrary] = {
                         id: articleId,
                         title: result.title,
+                        summary: result.summary,
                         content: result.content,
                         author: await getAuthor(result.author),
                         publishTime: result.publishTime,
@@ -93,6 +94,8 @@ const LibraryPage = () => {
                         isSeries: result.isSeries,
                         readTime: result.readTime,
                         cover: result.cover,
+
+                        likedState: result.likes.indexOf(id) !== -1,
                     };
                 } else {
                     navigate("/");

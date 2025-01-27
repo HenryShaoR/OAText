@@ -1,5 +1,5 @@
 import {Dispatch, SetStateAction, useState} from 'react';
-import {X, Users, Trash, Search} from '../../asserts/icons.tsx';
+import {X, Users, Trash, Search, Save} from '../../asserts/icons.tsx';
 import ImageUpload from '../post/ImageUpload';
 import {Link} from "react-router-dom";
 import {readCookies} from "../../utils/cookies.ts";
@@ -146,7 +146,7 @@ const ChatSettings = ({ chat, onCancel, onUpdate, onDelete }: ChatSettingsProps)
                                         type="text"
                                         value={groupName}
                                         onChange={(e) => setGroupName(e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 px-2 py-1"
+                                        className="w-full rounded-lg border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 px-2 py-1 bg-gray-50 focus:bg-white"
                                         placeholder="Enter chat name"
                                     />
                                     {!groupName.trim() && (
@@ -158,16 +158,20 @@ const ChatSettings = ({ chat, onCancel, onUpdate, onDelete }: ChatSettingsProps)
                     </div>
 
                     <div className="bg-white rounded-lg shadow-sm p-6 space-y-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-medium">Members</h3>
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-medium my-2">Members</h3>
                             { isEditingMembers ?
                                 <button
-                                    onClick={() => setIsEditingMembers(false)}
-                                    className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
+                                    onClick={() => {
+                                        setMembersList(tempMembers);
+                                        setIsEditingMembers(false);
+                                    }}
+                                    className="flex items-center space-x-2 hover:text-gray-900 border bg-black rounded-lg disabled:opacity-50 disabled:cursor-not-allowed py-1.5 px-3 hover:bg-gray-800"
                                     type="button"
+                                    disabled={tempMembers.length < 2}
                                 >
-                                    <span className={"text-red-500"}>Discard Changes</span>
-                                    <X className="w-5 h-5 text-red-500"/>
+                                    <Save className="w-5 h-5 text-white"/>
+                                    <span className="text-white">Save Changes</span>
                                 </button>
                                 :
                                 <button
@@ -184,14 +188,24 @@ const ChatSettings = ({ chat, onCancel, onUpdate, onDelete }: ChatSettingsProps)
                             }
                         </div>
                         {isEditingMembers && (
-                            <div className="mt-4 p-4 border border-gray-200 rounded-lg">
-                                <h4 className="font-medium mb-3">Add New Member</h4>
+                            <div className="mt-4 p-4 border border-gray-200 rounded-lg h-fit">
+                                <div className="flex space-x-2 items-center justify-between mb-3">
+                                    <h4 className="font-medium">Add New Member</h4>
+                                    <button
+                                        onClick={() => setIsEditingMembers(false)}
+                                        className="flex items-center space-x-2 text-red-500 hover:bg-red-50 py-1 px-2 rounded-lg border border-red-600"
+                                        type="button"
+                                    >
+                                        <span className="">Discard Changes</span>
+                                        <X className="w-5 h-5"/>
+                                    </button>
+                                </div>
                                 <div className="flex space-x-2">
-                                    <input
+                                <input
                                         type="text"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 px-2 py-1"
+                                        className="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 px-2 py-1 bg-gray-50 focus:bg-white"
                                         placeholder="Username/Email/ID"
                                     />
                                     <button
@@ -217,12 +231,12 @@ const ChatSettings = ({ chat, onCancel, onUpdate, onDelete }: ChatSettingsProps)
                                     <Link
                                         to={`/profile/${member.id}`}
                                         target="_blank"  // open in new tab to prevent interrupting editing members
-                                        className="flex items-center space-x-3 w-full"
+                                        className="flex items-center space-x-4 w-full"
                                     >
                                         <img
                                             src={member.avatar}
                                             alt={member.username}
-                                            className="w-8 h-8 rounded-full"
+                                            className="w-12 h-12 rounded-full min-w-12"
                                         />
                                         <div>
                                             <p className="font-medium hover:text-blue-600 hover:font-semibold">{member.username}{member.id === uid && " (You)"}</p>
@@ -244,19 +258,6 @@ const ChatSettings = ({ chat, onCancel, onUpdate, onDelete }: ChatSettingsProps)
                                 <p className="mt-1 text-sm text-red-600">At least two members are required</p>
                             )}
                         </div>
-                        {isEditingMembers &&
-                            <button
-                                disabled={membersList.length < 2}
-                                className="w-full px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed justify-items-center"
-                                type="button"
-                                onClick={() => {
-                                    setMembersList(tempMembers);
-                                    setIsEditingMembers(false);
-                                }}
-                            >
-                                <span>Confirm</span>
-                            </button>
-                        }
                     </div>
                 </form>
             </div>
@@ -280,13 +281,20 @@ const ChatSettings = ({ chat, onCancel, onUpdate, onDelete }: ChatSettingsProps)
                     }
 
                     <button
-                        onClick={handleUpdateSettings}
-                        disabled={!groupName.trim() || !avatar || (isEditingMembers? tempMembers:membersList).length < 2 || saving}
+                        onClick={
+                        isEditingMembers?
+                            () => {
+                                setMembersList(tempMembers);
+                                setIsEditingMembers(false);
+                            }
+                            :
+                            handleUpdateSettings}
+                        disabled={(!isEditingMembers && (!groupName.trim() || !avatar || membersList.length < 2 || saving)) || (isEditingMembers && tempMembers.length < 2)}
                         className="w-full px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed justify-items-center"
                     >
                         { saving?
                             <Loading scale={0.2} color="#fff" message={creating? "Creating" : "Saving"} />:
-                            <span>{creating? "Create Chat" : "Save Changes"}</span>
+                            <span>{isEditingMembers? "Save Members Changes" : (creating? "Create Chat" : `Save Changes`)}</span>
                         }
                     </button>
                 </div>

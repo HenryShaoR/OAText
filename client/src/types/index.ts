@@ -37,6 +37,7 @@ export interface Article {
     author: User;
     cover: string;
     title: string;
+    summary: string;
     content: string;
     isSeries: boolean;
     publishTime: Date;

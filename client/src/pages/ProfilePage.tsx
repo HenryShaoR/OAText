@@ -21,9 +21,6 @@ const ProfilePage = () => {
     useEffect(() => {
         const getArticle = async (articleId: number, profileUser: any, loginUser: any) => {
             try {
-                // const response = await fetch(`${server}/v1/article/${articleId}`, {
-                //     method: 'GET'
-                // });
                 const response = await fetch(`${server}/v2/article/get/${articleId}`, {
                     method: "POST",
                     headers: {
@@ -31,7 +28,7 @@ const ProfilePage = () => {
                     },
                     body: JSON.stringify({
                         requestFields: {},
-                        responseFields: ["title", "content", "publishTime", "likes", "isSeries", "readTime", "cover"],
+                        responseFields: ["title", "summary", "content", "publishTime", "likes", "isSeries", "readTime", "cover"],
                     })
                 });
 
@@ -41,6 +38,7 @@ const ProfilePage = () => {
                     return {
                         id: articleId,
                         title: result.title,
+                        summary: result.summary,
                         content: result.content,
                         author: profileUser,
                         publishTime: result.publishTime,
@@ -65,9 +63,6 @@ const ProfilePage = () => {
 
         const getProfileUser = async () => {
             try {
-                // const response = await fetch(`${server}/v1/user/${profileUserId}`, {
-                //     method: 'GET'
-                // });
                 const response = await fetch(`${server}/v2/user/get/${profileUserId}`, {
                     method: 'POST',
                     headers: {
@@ -165,52 +160,60 @@ const ProfilePage = () => {
     return (
         <div className="max-w-5xl mx-auto">
             <div className="bg-white rounded-lg shadow-sm p-8 mb-8">
-                <div className="flex items-start justify-between mb-6">
-                    <div className="flex items-center space-x-6">
-                        <img
-                            src={user.avatar}
-                            alt={user.username}
-                            className="w-24 h-24 rounded-full object-cover"
-                        />
-                        <div>
-                            <h1 className="text-3xl font-bold mb-2">{user.username}</h1>
-                            <p className="text-gray-600 mb-4">{user.bio}</p>
-                            <div className="flex items-center space-x-6">
-                                <div className="flex items-center space-x-2">
-                                    <Users className="w-5 h-5 text-gray-500"/>
-                                    <span className="text-sm text-gray-600">
-                    <strong>{user.followers}</strong> followers
-                        </span>
-                                    <span className="text-sm text-gray-600">·</span>
-                                    <span className="text-sm text-gray-600">
-                        <strong>{user.following}</strong> following
-                        </span>
+                <div className="flex items-center space-x-8 mb-2">
+                    <img
+                        src={user.avatar}
+                        alt={user.username}
+                        className="w-32 h-32 rounded-full object-cover"
+                    />
+                    <div className="flex-col items-start justify-between w-full">
+                        <div className="flex items-center justify-between space-x-2 w-full h-full">
+                            <div>
+                                <h1 className="text-3xl font-bold mb-2">{user.username}</h1>
+                                <div className="flex items-center space-x-6">
+                                    <div className="flex items-center space-x-2">
+                                        <span className="text-sm text-gray-600 border rounded-md px-1.5 py-0.5 whitespace-nowrap">
+                                            <strong>ID</strong> {user.id}
+                                        </span>
+                                        <span className="text-sm text-gray-600">·</span>
+                                        <Users className="w-5 h-5 text-gray-500"/>
+                                        <span className="text-sm text-gray-600 whitespace-nowrap">
+                                            <strong>{user.followers}</strong> followers
+                                        </span>
+                                        <span className="text-sm text-gray-600">·</span>
+                                        <span className="text-sm text-gray-600 whitespace-nowrap">
+                                            <strong>{user.following}</strong> following
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                    {
-                        profileUserId === loginUserId ?
-                            <Link
-                                to="/settings"
-                                className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                            >
-                                <Edit className="w-5 h-5"/>
-                                <span>Edit Profile</span>
-                            </Link>
-                            :
-                            <button
-                                onClick={async () => await follow(following, setFollowing, user, loginUserId)}
-                                className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                            >
+                            <div>
                                 {
-                                    following
-                                        ? <Following className="w-5 h-5"/>
-                                        : <Follow className="w-5 h-5"/>
+                                    profileUserId === loginUserId ?
+                                        <Link
+                                            to="/settings"
+                                            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                                        >
+                                            <Edit className="w-5 h-5"/>
+                                            <span className="whitespace-nowrap">Edit Profile</span>
+                                        </Link>
+                                        :
+                                        <button
+                                            onClick={async () => await follow(following, setFollowing, user, loginUserId)}
+                                            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                                        >
+                                            {
+                                                following
+                                                    ? <Following className="w-5 h-5"/>
+                                                    : <Follow className="w-5 h-5"/>
+                                            }
+                                            <span>{following ? "Following" : "Follow"}</span>
+                                        </button>
                                 }
-                                <span>{following ? "Following" : "Follow"}</span>
-                            </button>
-                    }
+                            </div>
+                        </div>
+                        {user.bio && <p className="text-gray-600 mt-4 bg-gray-100 p-2 rounded-lg">{user.bio}</p>}
+                    </div>
                 </div>
             </div>
 

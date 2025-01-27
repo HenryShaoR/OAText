@@ -1,6 +1,6 @@
 import {Link, useNavigate, useParams} from 'react-router-dom';
 import {Bookmark, Like, MessageCircle, Share2} from '../asserts/icons';
-import {server} from "../utils/address.ts";
+import {client, server} from "../utils/address.ts";
 import {useEffect, useState} from "react";
 import {popup} from "../utils/popup.ts";
 import {bookmark, like} from "../hooks/Interaction.ts";
@@ -24,7 +24,8 @@ const ReadingPage = () => {
             avatar: '',
             bio: ''
         },
-        publishTime: '',
+        publishTime: new Date(),
+        lastEdit: new Date(),
         readTime: 0,
         likes: 0
     });
@@ -34,9 +35,6 @@ const ReadingPage = () => {
     useEffect(() => {
         const getInitialState = async (): Promise<boolean> => {
             try {
-                // const response = await fetch(`${server}/v1/user/${userId}`, {
-                //     method: 'GET'
-                // });
                 const response = await fetch(`${server}/v2/user/get/${userId}`, {
                     method: "POST",
                     headers: {
@@ -66,10 +64,6 @@ const ReadingPage = () => {
 
         const getAuthor = async (uid: number) => {
             try {
-                // const response = await fetch(`${server}/v1/user/${uid}`, {
-                //     method: 'GET'
-                // });
-
                 const response = await fetch(`${server}/v2/user/get/${uid}`, {
                     method: 'POST',
                     headers: {
@@ -103,9 +97,6 @@ const ReadingPage = () => {
 
         const getArticle = async () => {
             try {
-                // const response = await fetch(`${server}/v1/article/${id}`, {
-                //     method: 'GET'
-                // });
                 const response = await fetch(`${server}/v2/article/get/${id}`, {
                     method: "POST",
                     headers: {
@@ -113,7 +104,7 @@ const ReadingPage = () => {
                     },
                     body: JSON.stringify({
                         requestFields: {},
-                        responseFields: ["title", "content", "publishTime", "readTime", "likes", "author", "cover"],
+                        responseFields: ["title", "content", "summary", "publishTime", "lastEdit", "readTime", "likes", "author", "cover"],
                     })
                 });
 
@@ -123,9 +114,12 @@ const ReadingPage = () => {
                     setLoadingArticle(false);
                     setLiked(result.likes.indexOf(userId) !== -1);
                     return {
+                        id: id,
                         title: result.title,
+                        summary: result.summary,
                         content: result.content,
-                        publishTime: result.publishTime,
+                        publishTime: new Date(result.publishTime),
+                        lastEdit: new Date(result.lastEdit),
                         readTime: result.readTime,
                         likes: result.likes.length,
                         author: await getAuthor(result.author),
@@ -164,42 +158,40 @@ const ReadingPage = () => {
     }
     console.timeEnd("Loading...");
     return (
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-3xl mx-auto bg-white rounded-lg p-4">
             <img
                 src={post.cover}
                 alt={post.title}
                 className="w-full h-96 object-cover rounded-lg mb-8"
             />
 
-            <h1 className="text-4xl font-bold mb-6">{post.title}</h1>
+            <h1 className="text-4xl font-bold mb-3 px-2">{post.title}</h1>
 
-            <div className="flex items-center justify-between mb-8">
-                <Link to={`/profile/${post.author.id}`}>
-                    <div className="flex items-center space-x-4">
-                        <img
-                            src={post.author.avatar}
-                            alt={post.author.username}
-                            className="w-12 h-12 rounded-full"
-                        />
-                        <div>
-                            <h3 className="font-medium hover:underline">{post.author.username}</h3>
-                            <p className="text-sm text-gray-500">{post.author.bio}</p>
-                        </div>
+            <div className="prose max-w-none mb-3 italic px-2">{post.summary}</div>
+
+            <Link
+                to={`/profile/${post.author.id}`}
+                className="flex items-center justify-between space-x-4 mb-2"
+            >
+                <div className="flex items-center space-x-4 bg-gray-50 rounded-lg p-2 hover:bg-gray-100">
+                    <img
+                        src={post.author.avatar}
+                        alt={post.author.username}
+                        className="w-12 h-12 rounded-full"
+                    />
+                    <div>
+                        <h3 className="font-medium hover:font-semibold hover:text-blue-600">{post.author.username}</h3>
+                        <p className="text-sm text-gray-500 hover:underline">{post.author.bio}</p>
                     </div>
-                </Link>
-
-                <div className="flex items-center space-x-4">
-                    <button className="text-gray-500 hover:text-gray-700">
-                        <Share2 className="w-5 h-5"/>
-                    </button>
-                    <button className="text-gray-500 hover:text-gray-700"
-                            onClick={async () => await bookmark(bookmarked, setBookmarked, post.id, userId)}>
-                        <Bookmark className={"w-5 h-5" + (bookmarked ? " text-yellow-400" : "")}/>
-                    </button>
                 </div>
+            </Link>
+
+            <div className="flex justify-between w-full h-fit text-gray-800 text-xs px-2 mb-8">
+                <p className="w-fit">{`Publish Time: ${post.publishTime.toLocaleString()}`}</p>
+                {post.publishTime.toLocaleString() !== post.lastEdit.toLocaleString() && <p className="w-fit">{`Last Edit Time: ${post.lastEdit.toLocaleString()}`}</p>}
             </div>
 
-            <div className="prose max-w-none mb-8">
+            <div className="prose max-w-none mb-8 px-2">
                 {post.content.split('\n').map((paragraph: string, index: number) => (
                     <p key={index} className="mb-4 text-gray-800 leading-relaxed">
                         {paragraph}
@@ -208,17 +200,32 @@ const ReadingPage = () => {
             </div>
 
             <div className="flex items-center justify-between border-t pt-6">
-                <div className="flex items-center space-x-6">
+                <div className="flex items-center space-x-1">
                     <button
                         onClick={async () => await like(liked, setLiked, post, userId)}
-                        className="flex items-center space-x-2 text-gray-500 hover:text-gray-700"
+                        className="flex items-center space-x-2 text-gray-500 hover:bg-gray-50 rounded-full p-2"
                     >
-                        <Like className={"w-5 h-5" + (liked? "  text-red-500" : "")}/>
+                        <Like className={"w-5 h-5" + (liked ? "  text-red-500" : "")}/>
                         <span>{post.likes}</span>
                     </button>
-                    <button className="flex items-center space-x-2 text-gray-500 hover:text-gray-700">
+                    <button className="flex items-center space-x-2 text-gray-500 hover:bg-gray-50 rounded-full p-2"
+                            onClick={async () => {console.log(post);await bookmark(bookmarked, setBookmarked, post.id, userId)}}>
+                        <Bookmark className={"w-5 h-5" + (bookmarked ? " text-yellow-400" : "")}/>
+                    </button>
+                    <button className="flex items-center space-x-2 text-gray-500 hover:bg-gray-50 rounded-full p-2">
                         <MessageCircle className="w-5 h-5"/>
                         <span>Comments</span>
+                    </button>
+                </div>
+                <div className="flex items-center">
+                    <button
+                        className="flex items-center space-x-2 text-gray-500 hover:bg-gray-50 rounded-full p-2"
+                        onClick={async () => {
+                            await navigator.clipboard.writeText(`${client}/post/${post.id}/?share=${userId}`);
+                            popup("Shareable Link Copied to Clipboard");
+                        }}
+                    >
+                        <Share2 className="w-5 h-5"/>
                     </button>
                 </div>
             </div>

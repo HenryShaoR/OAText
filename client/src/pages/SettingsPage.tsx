@@ -354,7 +354,7 @@ const SettingsPage: React.FC = () => {
                         <input
                             {...register("name")}
                             type="text"
-                            className="w-full rounded-lg border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 px-2 py-1"
+                            className="w-full rounded-lg border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 px-2 py-1 bg-gray-50 focus:bg-white"
                         />
                         {errors.name && (
                             <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
@@ -368,7 +368,7 @@ const SettingsPage: React.FC = () => {
                         <input
                             {...register("email")}
                             type="email"
-                            className="w-full rounded-lg border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 px-2 py-1"
+                            className="w-full rounded-lg border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 px-2 py-1 bg-gray-50 focus:bg-white"
                         />
                         {errors.email && (
                             <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
@@ -382,7 +382,12 @@ const SettingsPage: React.FC = () => {
                         <textarea
                             {...register("bio")}
                             rows={3}
-                            className="w-full rounded-lg border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 px-2 py-1"
+                            className="w-full rounded-lg border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 px-2 py-1 resize-none bg-gray-50 focus:bg-white"
+                            onChange={(e) => {
+                                const field = e.target as HTMLTextAreaElement;
+                                field.style.height = "auto";
+                                field.style.height = `${field.scrollHeight}px`;
+                            }}
                         />
                         {errors.bio && (
                             <p className="mt-1 text-sm text-red-600">{errors.bio.message}</p>
@@ -460,7 +465,7 @@ const SettingsPage: React.FC = () => {
                                         type={showCurrentPassword ? 'text' : 'password'}
                                         {...registerVerify('currentPassword')}
                                         placeholder="Enter your current password"
-                                        className="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 px-2 py-1 w-full"
+                                        className="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 px-2 py-1 w-full bg-gray-50 focus:bg-white"
                                     />
                                     <button
                                         type="button"
@@ -493,23 +498,24 @@ const SettingsPage: React.FC = () => {
                     </form>
                 ) : (
                     <div className="space-y-6">
-                        <div className="p-4 border border-gray-200 rounded-lg space-y-4">
-                            <div className="flex items-center justify-between">
-                                <button
-                                    className="flex items-center space-x-2 w-full"
-                                    onClick={() => setShowPasswordReset(!showPasswordReset)}
-                                >
+                        <button
+                            className={`p-4 border border-gray-200 rounded-lg space-y-4 w-full ${!showPasswordReset && "bg-gray-50 hover:bg-gray-100"}`}
+                            onClick={() => setShowPasswordReset(true)}
+                            type="button"
+                        >
+                            <button
+                                className="flex items-center justify-between w-full"
+                                onClick={() => setTimeout(() => setShowPasswordReset(!showPasswordReset), 10)}
+                                type="button"
+                            >
+                                <div className="flex items-center space-x-2 w-full">
                                     <KeyRound className="w-5 h-5 text-gray-500"/>
                                     <h3 className="font-medium">Reset Password</h3>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPasswordReset(!showPasswordReset)}
-                                    className="text-sm text-gray-500 hover:text-gray-700"
-                                >
+                                </div>
+                                <div className="text-sm text-gray-500 hover:text-gray-700">
                                     {showPasswordReset ? 'Cancel' : 'Change'}
-                                </button>
-                            </div>
+                                </div>
+                            </button>
 
                             {showPasswordReset && (
                                 <form onSubmit={handleSubmitPasswordUpdate(updatePassword)} className="space-y-4">
@@ -518,7 +524,7 @@ const SettingsPage: React.FC = () => {
                                             type={showNewPassword ? 'text' : 'password'}
                                             {...registerPasswordUpdate('newPassword')}
                                             placeholder="New password"
-                                            className="w-full rounded-lg border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 px-2 py-1"
+                                            className="w-full rounded-lg border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 px-2 py-1 bg-gray-50 focus:bg-white"
                                         />
                                         <button
                                             type="button"
@@ -541,7 +547,7 @@ const SettingsPage: React.FC = () => {
                                             type={showConfirmPassword ? 'text' : 'password'}
                                             {...registerPasswordUpdate('confirmPassword')}
                                             placeholder="Confirm new password"
-                                            className="w-full rounded-lg border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 px-2 py-1"
+                                            className="w-full rounded-lg border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 px-2 py-1 bg-gray-50 focus:bg-white"
                                         />
                                         <button
                                             type="button"
@@ -571,25 +577,26 @@ const SettingsPage: React.FC = () => {
                                     </button>
                                 </form>
                             )}
-                        </div>
+                        </button>
 
-                        <div className="p-4 border border-red-200 rounded-lg space-y-4">
-                            <div className="flex items-center justify-between">
-                                <button
-                                    className="flex items-center space-x-2 w-full"
-                                    onClick={() => setShowDeleteAccount(!showDeleteAccount)}
-                                >
+                        <button
+                            type="button"
+                            className={`p-4 border border-red-200 rounded-lg space-y-4 w-full ${!showDeleteAccount && "bg-gray-50 hover:bg-gray-100"}`}
+                            onClick={() => setShowDeleteAccount(true)}
+                        >
+                            <button
+                                className="flex items-center justify-between w-full"
+                                type="button"
+                                onClick={() => setTimeout(() => setShowDeleteAccount(!showDeleteAccount), 10)}
+                            >
+                                <div className="flex items-center space-x-2 w-full">
                                     <Trash className="w-5 h-5 text-red-500"/>
                                     <h3 className="font-medium text-red-500">Delete Account</h3>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowDeleteAccount(!showDeleteAccount)}
-                                    className="text-sm text-red-500 hover:text-red-700"
-                                >
+                                </div>
+                                <div className="text-sm text-red-500 hover:text-red-700">
                                     {showDeleteAccount ? 'Cancel' : 'Delete'}
-                                </button>
-                            </div>
+                                </div>
+                            </button>
 
                             {showDeleteAccount && (
                                 <div className="space-y-4">
@@ -602,7 +609,7 @@ const SettingsPage: React.FC = () => {
                                         value={deleteConfirmation}
                                         onChange={(e) => setDeleteConfirmation(e.target.value)}
                                         placeholder="Permanently Delete Account"
-                                        className="w-full rounded-lg border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 px-2 py-1"
+                                        className="w-full rounded-lg border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 px-2 py-1 bg-gray-50 focus:bg-white"
                                     />
                                     <button
                                         type="button"
@@ -621,7 +628,7 @@ const SettingsPage: React.FC = () => {
                                     </button>
                                 </div>
                             )}
-                        </div>
+                        </button>
                     </div>
                 )}
             </div>

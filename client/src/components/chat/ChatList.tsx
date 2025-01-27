@@ -14,16 +14,14 @@ const ChatList = ({ chats, activeChat, onSelectChat, newChat, isCreatingChat}: C
         <div className="space-y-2 overflow-x-hidden">
             <button
                 key="new"
-                onClick={() => {
-                    newChat();
-                }}
+                onClick={newChat}
                 disabled={isCreatingChat}
-                className={`w-full h-16 p-3 rounded-lg flex items-center space-x-3 hover:bg-gray-50 border disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500`}
+                className={`w-full h-16 p-5 rounded-lg flex items-center space-x-3 hover:bg-gray-50 border disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500`}
             >
                 {
                     isCreatingChat ?
-                        <Loading message="Creating New Chat" scale={0.3} color="#444" />:
-                        <div className="flex flex-row items-center space-x-2">
+                        <Loading message="Creating New Chat" scale={0.3} color="#444"/>:
+                        <div className="flex flex-row items-center space-x-4">
                             <Plus className="w-8 h-8 rounded-full object-cover" />
                             <p className="text-nowrap">New Chat</p>
                         </div>
@@ -41,7 +39,7 @@ const ChatList = ({ chats, activeChat, onSelectChat, newChat, isCreatingChat}: C
                         <img
                             src={chat.avatar}
                             alt={chat.groupName}
-                            className="w-12 h-12 rounded-full object-cover"
+                            className="w-12 h-12 min-w-12 rounded-full object-cover"
                         />
                         <div className="flex-1 text-left">
                             <h3 className="font-medium">{chat.groupName}</h3>

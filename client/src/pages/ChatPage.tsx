@@ -1,4 +1,4 @@
-import {ChangeEvent, Dispatch, SetStateAction, useEffect, useState} from 'react';
+import {Dispatch, SetStateAction, useEffect, useState} from 'react';
 import {Search, User, Users} from '../asserts/icons';
 import ChatList from '../components/chat/ChatList';
 import ChatWindow from '../components/chat/ChatWindow';
@@ -45,10 +45,6 @@ const ChatPage = () => {
             (chat.members.length > 2) === (chatType === "group") &&
             chat.groupName.toLowerCase().includes(searchQuery.toLowerCase())
     );
-
-    const handleSearchInput = (event: ChangeEvent<HTMLInputElement>) => {
-        setSearchQuery(event.target.value);
-    };
 
     async function getMessages(id: number) {
         try {
@@ -216,9 +212,9 @@ const ChatPage = () => {
 
     function refreshList(updatedChat: any, action: number) {
         const Action = {
-            "Send": 0,
-            "Update": 1,
-            "Delete": 2,
+            Send: 0,
+            Update: 1,
+            Delete: 2,
         }
 
         let updatedChats;
@@ -229,16 +225,17 @@ const ChatPage = () => {
             updatedChats = chats.map(chat =>
                 chat.id === updatedChat.id ? updatedChat : chat
             );
-        } else {
+        } else if (action === Action.Delete) {
             updatedChats = chats.filter(chat => chat.id !== updatedChat.id);
             updatedChat = null;
+        } else {
+            updatedChats = chats;
         }
         setChats(updatedChats);
         setActiveChat(updatedChat);
     }
 
     useEffect(() => {
-
         const getUser = async () => {
             try {
                 const response = await fetch(`${server}/v2/user/get/${id}`, {
@@ -345,7 +342,7 @@ const ChatPage = () => {
                             type="text"
                             placeholder="Search conversations..."
                             value={searchQuery}
-                            onChange={handleSearchInput}
+                            onChange={(event) => setSearchQuery(event.target.value)}
                             className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-gray-500 focus:border-gray-500"
                         />
                         <Search className="w-5 h-5 text-gray-400 absolute left-3 top-2.5"/>
