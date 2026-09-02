@@ -2,3 +2,6 @@
 simple_client/
 client/node_modules/
 server/node_modules/
+
+.backend-installed
+.frontend-installed

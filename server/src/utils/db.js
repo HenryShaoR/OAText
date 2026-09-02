@@ -1,10 +1,11 @@
 import {MongoClient} from "mongodb";
+import 'dotenv/config';
 
 
 export class DBConnection {
     constructor() {
         this.connected = false;
-        this.client = new MongoClient("mongodb+srv://BackEnd:N6fJjUYDXp8Bgppl@oatext.vcy18.mongodb.net/?retryWrites=true&w=majority&appName=OAText");
+        this.client = new MongoClient(process.env.MONGODB_URL,{ family: 4 });
     }
 
     async connect() {
