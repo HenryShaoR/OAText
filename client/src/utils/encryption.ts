@@ -1,9 +1,7 @@
-import crypto from "crypto";
+import CryptoJS from "crypto-js";
 
 export function SHA256(data: string): string {
-    const hash = crypto.createHash('sha256');
-    hash.update(data);
-    return hash.digest('hex');
+    return CryptoJS.SHA256(data).toString();
 }
 
 /*
