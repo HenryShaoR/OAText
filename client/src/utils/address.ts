@@ -1,2 +1,2 @@
-export const server = "http://localhost:8800";
-export const client = "http://localhost:5173";
+export const server = import.meta.env.VITE_SERVER_URL || (typeof window !== "undefined" ? window.location.origin : "http://localhost:8800");
+export const client = typeof window !== "undefined" ? window.location.origin : "http://localhost:5173";

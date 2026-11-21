@@ -23,7 +23,9 @@ const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     const [lastMessage, setLastMessage] = useState<any>(null); // State for storing the latest message
 
     useEffect(() => {
-        const ws = new WebSocket(`ws://${server.split(/^\w{4,5}:\/\//)[1]}/ws`);
+        const wsProtocol = server.startsWith("https") ? "wss" : "ws";
+        const wsHost = server.replace(/^https?:\/\//, "");
+        const ws = new WebSocket(`${wsProtocol}://${wsHost}/ws`);
 
         ws.onopen = () => {
             console.log('WebSocket connected');
